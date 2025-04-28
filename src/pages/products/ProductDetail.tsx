@@ -59,7 +59,7 @@ const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   unitPrice: z.coerce.number().min(0, 'Price must be positive'),
-  taxRate: z.coerce.number().min(0, 'Tax rate must be positive'),
+  taxrate: z.coerce.number().min(0, 'Tax rate must be positive'),
   stockquantity: z.coerce.number().min(0, 'Stock must be positive'),
 });
 
@@ -100,7 +100,7 @@ const ProductDetail = () => {
       name: '',
       description: '',
       unitPrice: 0,
-      taxRate: 0,
+      taxrate: 0,
       stockquantity: 0,
     },
     mode: 'onChange'
@@ -440,7 +440,7 @@ const ProductDetail = () => {
 
                 <FormField
                   control={form.control}
-                  name="taxRate"
+                  name="taxrate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tax Rate (%)</FormLabel>

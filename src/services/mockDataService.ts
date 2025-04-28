@@ -161,7 +161,7 @@ export const mockDataService = {
       name: product.name,
       description: product.description,
       unitPrice: product.unitprice,
-      taxRate: product.taxrate,
+      taxrate: product.taxrate,
       stockquantity: product.stockquantity,
       createdAt: product.createdat || new Date().toISOString(),
       updatedAt: product.updatedat || new Date().toISOString()
@@ -186,7 +186,7 @@ export const mockDataService = {
       name: data.name,
       description: data.description,
       unitPrice: data.unitprice,
-      taxRate: data.taxrate,
+      taxrate: data.taxrate,
       stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
@@ -201,7 +201,7 @@ export const mockDataService = {
         name: product.name,
         description: product.description,
         unitprice: product.unitPrice,
-        taxrate: product.taxRate,
+        taxrate: product.taxrate,
         stockquantity: product.stockquantity
       })
       .select()
@@ -218,7 +218,7 @@ export const mockDataService = {
       name: data.name,
       description: data.description,
       unitPrice: data.unitprice,
-      taxRate: data.taxrate,
+      taxrate: data.taxrate,
       stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
@@ -231,7 +231,7 @@ export const mockDataService = {
     if (product.name !== undefined) updateData.name = product.name;
     if (product.description !== undefined) updateData.description = product.description;
     if (product.unitPrice !== undefined) updateData.unitprice = product.unitPrice;
-    if (product.taxRate !== undefined) updateData.taxrate = product.taxRate;
+    if (product.taxrate !== undefined) updateData.taxrate = product.taxrate;
     if (product.stockquantity !== undefined) updateData.stockquantity = product.stockquantity;
     
     const { data, error } = await supabase
@@ -252,7 +252,7 @@ export const mockDataService = {
       name: data.name,
       description: data.description,
       unitPrice: data.unitprice,
-      taxRate: data.taxrate,
+      taxrate: data.taxrate,
       stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
@@ -314,7 +314,7 @@ export const mockDataService = {
               name: productData.name,
               description: productData.description,
               unitPrice: productData.unitprice,
-              taxRate: productData.taxrate,
+              taxrate: productData.taxrate,
               stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
@@ -328,7 +328,7 @@ export const mockDataService = {
           product: product,
           quantity: item.quantity,
           unitPrice: item.unitprice,
-          taxRate: item.taxrate,
+          taxrate: item.taxrate,
           discount: item.discount,
           totalExcl: item.totalexcl,
           totalTax: item.totaltax,
@@ -412,7 +412,7 @@ export const mockDataService = {
             name: productData.name,
             description: productData.description,
             unitPrice: productData.unitprice,
-            taxRate: productData.taxrate,
+            taxrate: productData.taxrate,
             stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
@@ -426,7 +426,7 @@ export const mockDataService = {
         product,
         quantity: item.quantity,
         unitPrice: item.unitprice,
-        taxRate: item.taxrate,
+        taxrate: item.taxrate,
         discount: item.discount,
         totalExcl: item.totalexcl,
         totalTax: item.totaltax,
@@ -504,7 +504,7 @@ export const mockDataService = {
               productid: item.productId,
               quantity: item.quantity,
               unitprice: item.unitPrice,
-              taxrate: item.taxRate,
+              taxrate: item.taxrate,
               discount: item.discount || 0,
               totalexcl: item.totalExcl,
               totaltax: item.totalTax,
@@ -677,7 +677,7 @@ export const mockDataService = {
               name: productData.name,
               description: productData.description,
               unitPrice: productData.unitprice,
-              taxRate: productData.taxrate,
+              taxrate: productData.taxrate,
               stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
@@ -691,7 +691,7 @@ export const mockDataService = {
           product,
           quantity: item.quantity,
           unitPrice: item.unitprice,
-          taxRate: item.taxrate,
+          taxrate: item.taxrate,
           discount: item.discount,
           totalExcl: item.totalexcl,
           totalTax: item.totaltax,
@@ -777,7 +777,7 @@ export const mockDataService = {
             name: productData.name,
             description: productData.description,
             unitPrice: productData.unitprice,
-            taxRate: productData.taxrate,
+            taxrate: productData.taxrate,
             stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
@@ -791,7 +791,7 @@ export const mockDataService = {
         product,
         quantity: item.quantity,
         unitPrice: item.unitprice,
-        taxRate: item.taxrate,
+        taxrate: item.taxrate,
         discount: item.discount,
         totalExcl: item.totalexcl,
         totalTax: item.totaltax,
@@ -876,7 +876,7 @@ export const mockDataService = {
               name: productData.name,
               description: productData.description,
               unitPrice: productData.unitprice,
-              taxRate: productData.taxrate,
+              taxrate: productData.taxrate,
               stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
@@ -890,7 +890,7 @@ export const mockDataService = {
           product,
           quantity: item.quantity,
           unitPrice: item.unitprice,
-          taxRate: item.taxrate,
+          taxrate: item.taxrate,
           discount: item.discount,
           totalExcl: item.totalexcl,
           totalTax: item.totaltax,
@@ -981,7 +981,7 @@ export const mockDataService = {
             name: productData.name,
             description: productData.description,
             unitPrice: productData.unitprice,
-            taxRate: productData.taxrate,
+            taxrate: productData.taxrate,
             stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
@@ -995,7 +995,7 @@ export const mockDataService = {
         product,
         quantity: item.quantity,
         unitPrice: item.unitprice,
-        taxRate: item.taxrate,
+        taxrate: item.taxrate,
         discount: item.discount,
         totalExcl: item.totalexcl,
         totalTax: item.totaltax,
@@ -1077,7 +1077,7 @@ export const mockDataService = {
               productid: item.productId,
               quantity: item.quantity,
               unitprice: item.unitPrice || 0,
-              taxrate: item.taxRate || 0,
+              taxrate: item.taxrate || 0,
               discount: item.discount || 0,
               totalexcl: item.totalExcl || 0,
               totaltax: item.totalTax || 0,
