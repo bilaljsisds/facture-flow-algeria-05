@@ -107,8 +107,9 @@ const ProductDetail = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       toast({
-        title: 'Product Updated',
-        description: 'Product has been successfully updated'
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update product'
       });
       navigate('/products');
     },
@@ -116,7 +117,7 @@ const ProductDetail = () => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update product. Please try again.'
+        description: 'Failed to update product'
       });
       console.error('Error updating product:', error);
     }

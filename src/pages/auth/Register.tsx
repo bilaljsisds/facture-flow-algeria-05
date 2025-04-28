@@ -7,8 +7,11 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const registerSchema = z.object({
@@ -16,6 +19,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
+  role: z.enum(['admin', 'accountant', 'salesperson', 'viewer']),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -25,7 +29,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register: registerUser, isLoading } = useAuth();
+  const { isLoading, setUser } = useAuth();
+  const [registering, setRegistering] = React.useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -34,16 +39,47 @@ const Register = () => {
       email: '',
       password: '',
       confirmPassword: '',
+      role: 'viewer',
     },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await registerUser(data.email, data.password, data.name);
+      setRegistering(true);
+      
+      // Register with Supabase
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            role: data.role
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: 'Registration successful',
+        description: 'Please check your email to verify your account.',
+      });
+      
       // Navigate to login after successful registration
       navigate('/login');
     } catch (error) {
-      // Error is handled in the auth context
+      // Error handling
+      console.error('Registration error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Registration failed',
+        description: error.message || 'An error occurred during registration',
+      });
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -137,12 +173,39 @@ const Register = () => {
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="accountant">Accountant</SelectItem>
+                        <SelectItem value="salesperson">Salesperson</SelectItem>
+                        <SelectItem value="viewer">Viewer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <Button 
                 type="submit" 
                 className="w-full bg-primary"
-                disabled={isLoading}
+                disabled={registering}
               >
-                {isLoading ? (
+                {registering ? (
                   <>
                     <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
                     Creating account...
