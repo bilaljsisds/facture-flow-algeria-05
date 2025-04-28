@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,12 +9,14 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,68 +24,73 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { mockDataService } from '@/services/mockDataService';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
-import { ArrowLeft, Save, Trash } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { supabase } from "@/integrations/supabase/client";
+import {
+  useAuth,
+  UserRole
+} from '@/contexts/AuthContext';
+import {
+  ArrowLeft,
+  Save,
+  Trash
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Form validation schema
 const productSchema = z.object({
   code: z.string().min(2, 'Code must be at least 2 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  description: z.string().min(5, 'Description must be at least 5 characters'),
-  unitPrice: z.coerce.number().min(0, 'Unit price must be positive'),
+  description: z.string().optional(),
+  unitPrice: z.coerce.number().min(0, 'Price must be positive'),
   taxRate: z.coerce.number().min(0, 'Tax rate must be positive'),
-  stockQuantity: z.coerce.number().min(0, 'Stock quantity must be non-negative'),
+  stockQuantity: z.coerce.number().min(0, 'Stock quantity cannot be negative'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPermission } = useAuth();
-  const isNewProduct = id === 'new';
-  const [isEditing, setIsEditing] = useState(isNewProduct);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
-  
-  const { 
-    data: product, 
-    isLoading, 
-    error 
-  } = useQuery({
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => isNewProduct ? null : mockDataService.getProductById(id!),
-    enabled: !isNewProduct,
+    queryFn: () => mockDataService.getProductById(id!),
+    enabled: !!id,
   });
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: isNewProduct 
-      ? {
-          code: '',
-          name: '',
-          description: '',
-          unitPrice: 0,
-          taxRate: 19, // Default tax rate in Algeria
-          stockQuantity: 0,
-        }
-      : {
-          code: product?.code || '',
-          name: product?.name || '',
-          description: product?.description || '',
-          unitPrice: product?.unitPrice || 0,
-          taxRate: product?.taxRate || 0,
-          stockQuantity: product?.stockQuantity || 0,
-        },
+    defaultValues: {
+      code: '',
+      name: '',
+      description: '',
+      unitPrice: 0,
+      taxRate: 0,
+      stockQuantity: 0,
+    },
   });
-  
+
+  // Update form values when product data is loaded
   React.useEffect(() => {
-    if (!isNewProduct && product) {
+    if (product) {
       form.reset({
         code: product.code,
         name: product.name,
@@ -92,110 +100,68 @@ const ProductDetail = () => {
         stockQuantity: product.stockQuantity,
       });
     }
-  }, [product, form, isNewProduct]);
+  }, [product, form]);
 
-  const createMutation = useMutation({
-    mutationFn: (data: ProductFormValues) => {
-      const newProduct = {
-        code: data.code,
-        name: data.name,
-        description: data.description,
-        unitPrice: data.unitPrice,
-        taxRate: data.taxRate,
-        stockQuantity: data.stockQuantity
-      };
-      return mockDataService.createProduct(newProduct);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: 'Product created',
-        description: 'New product has been successfully created',
-      });
-      navigate('/products');
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create product. Please try again.',
-      });
-    },
-  });
-  
   const updateMutation = useMutation({
-    mutationFn: (data: ProductFormValues) => {
-      const updatedProduct = {
-        code: data.code,
-        name: data.name,
-        description: data.description,
-        unitPrice: data.unitPrice,
-        taxRate: data.taxRate,
-        stockQuantity: data.stockQuantity
-      };
-      return mockDataService.updateProduct(id!, updatedProduct);
-    },
+    mutationFn: (values: ProductFormValues) => mockDataService.updateProduct(id!, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
-        title: 'Product updated',
-        description: 'Product information has been successfully updated',
+        title: 'Product Updated',
+        description: 'Product has been successfully updated',
       });
       setIsEditing(false);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update product. Please try again.',
+        description: 'Failed to update product',
       });
-    },
-  });
-  
-  const deleteMutation = useMutation({
-    mutationFn: () => mockDataService.deleteProduct(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: 'Product deleted',
-        description: 'Product has been successfully deleted',
-      });
-      navigate('/products');
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete product. Please try again.',
-      });
+      console.error('Error updating product:', error);
     },
   });
 
-  const onSubmit = (data: ProductFormValues) => {
-    if (isNewProduct) {
-      createMutation.mutate(data);
-    } else {
-      updateMutation.mutate(data);
-    }
+  const handleSaveEdit = (values: ProductFormValues) => {
+    updateMutation.mutate(values);
   };
-  
-  if (!isNewProduct && isLoading) {
+
+  if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <div className="flex items-center gap-2">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"></span>
+          <span>Loading...</span>
+        </div>
       </div>
     );
   }
-  
-  if (!isNewProduct && error) {
+
+  if (!product) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <p className="text-red-500">Error loading product information</p>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex h-40 flex-col items-center justify-center gap-2">
+            <p className="text-center text-muted-foreground">
+              Product not found
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/products">Return to Products</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
-  
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('fr-DZ', {
+      style: 'currency',
+      currency: 'DZD',
+      minimumFractionDigits: 2,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -206,234 +172,269 @@ const ProductDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewProduct ? 'New Product' : product?.name}
+            {product.name}
           </h1>
         </div>
-        <div className="flex gap-2">
-          {!isNewProduct && !isEditing && canEdit && (
-            <Button onClick={() => setIsEditing(true)}>
-              Edit Product
-            </Button>
-          )}
-          {!isNewProduct && canEdit && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the product and cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => deleteMutation.mutate()}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
+        <Badge variant="outline" className="px-3 py-1">
+          {product.code}
+        </Badge>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {isNewProduct 
-              ? 'Create New Product' 
-              : isEditing 
-                ? 'Edit Product Information' 
-                : 'Product Information'}
-          </CardTitle>
-          <CardDescription>
-            {isNewProduct 
-              ? 'Add a new product to your catalog' 
-              : isEditing 
-                ? 'Update product details' 
-                : 'View product details'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Code</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter product code" 
-                          {...field} 
-                          disabled={!isEditing && !isNewProduct}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Name</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter product name" 
-                          {...field} 
-                          disabled={!isEditing && !isNewProduct}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter product description" 
-                        {...field} 
-                        disabled={!isEditing && !isNewProduct}
-                        rows={3}
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details" className="space-y-4">
+          {isEditing ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Edit Product</CardTitle>
+                <CardDescription>Update product information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Product Code</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Separator />
-              
-              <div className="grid gap-4 sm:grid-cols-3">
-                <FormField
-                  control={form.control}
-                  name="unitPrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unit Price (DZD)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter price" 
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...field} 
-                          disabled={!isEditing && !isNewProduct}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Product Name</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field} 
+                              className="min-h-[120px]" 
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <FormField
+                        control={form.control}
+                        name="unitPrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Unit Price</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="taxRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tax Rate (%)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" step="0.1" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="stockQuantity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Stock Quantity</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={form.handleSubmit(handleSaveEdit)}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </>
                   )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="taxRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tax Rate (%)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter tax rate" 
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          {...field} 
-                          disabled={!isEditing && !isNewProduct}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="stockQuantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stock Quantity</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter quantity" 
-                          type="number"
-                          min="0"
-                          {...field} 
-                          disabled={!isEditing && !isNewProduct}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              {(isEditing || isNewProduct) && (
-                <div className="flex justify-end gap-2">
-                  {!isNewProduct && (
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => {
-                        setIsEditing(false);
-                        if (product) {
-                          form.reset({
-                            code: product.code,
-                            name: product.name,
-                            description: product.description,
-                            unitPrice: product.unitPrice,
-                            taxRate: product.taxRate,
-                            stockQuantity: product.stockQuantity,
-                          });
-                        }
-                      }}
+                </Button>
+              </CardFooter>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Product Information</CardTitle>
+                    <CardDescription>Basic product details</CardDescription>
+                  </div>
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
                     >
-                      Cancel
+                      Edit
                     </Button>
                   )}
-                  <Button 
-                    type="submit" 
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                  >
-                    {createMutation.isPending || updateMutation.isPending ? (
-                      <>
-                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
-                        {isNewProduct ? 'Creating...' : 'Saving...'}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        {isNewProduct ? 'Create Product' : 'Save Changes'}
-                      </>
-                    )}
-                  </Button>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Product Code
+                      </div>
+                      <div className="text-lg font-semibold">{product.code}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Product Name
+                      </div>
+                      <div className="text-lg font-semibold">{product.name}</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Description
+                    </div>
+                    <div className="mt-1 whitespace-pre-line">
+                      {product.description || "No description available"}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Unit Price
+                      </div>
+                      <div className="text-lg font-semibold">
+                        {formatCurrency(product.unitPrice)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Tax Rate
+                      </div>
+                      <div className="text-lg font-semibold">{product.taxRate}%</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        Stock Quantity
+                      </div>
+                      <div className="text-lg font-semibold">
+                        {product.stockQuantity} units
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {canEdit && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-red-600">Danger Zone</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete Product
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the
+                            product and may affect existing invoices and delivery notes.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </CardContent>
+                </Card>
               )}
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Product History</CardTitle>
+              <CardDescription>History of transactions for this product</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center py-8 text-muted-foreground">
+                No transaction history available
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+
+import React from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -8,154 +9,164 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Check, X } from 'lucide-react';
+import {
+  useAuth,
+  UserRole
+} from '@/contexts/AuthContext';
+import {
+  ArrowLeft,
+  File,
+  FileCheck,
+  Send,
+  ThumbsDown,
+  ThumbsUp,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
 
 const ProformaDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNewProforma = id === 'new';
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
-  
-  // Fetch proforma data if not new
-  const { 
-    data: proformas = [],
-    isLoading,
-    error 
-  } = useQuery({
-    queryKey: ['proformaInvoices'],
-    queryFn: () => mockDataService.getProformaInvoices(),
-    enabled: !isNewProforma,
+  const { checkPermission } = useAuth();
+  const canApprove = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
+  const canConvert = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
+
+  const { data: proforma, isLoading } = useQuery({
+    queryKey: ['proformaInvoice', id],
+    queryFn: () => mockDataService.getProformaInvoiceById(id!),
+    enabled: !!id,
   });
-  
-  // Find the specific proforma
-  const proforma = isNewProforma ? null : proformas.find(p => p.id === id);
-  
-  // Format currency
-  const formatCurrency = (amount?: number) => {
-    if (amount === undefined) return '';
-    return amount.toLocaleString('fr-DZ', { 
-      style: 'currency', 
-      currency: 'DZD',
-      minimumFractionDigits: 2
-    });
-  };
-  
-  // Get status badge variant
-  const getStatusBadgeVariant = (status?: string) => {
-    if (!status) return 'outline';
-    switch (status) {
-      case 'draft':
-        return 'outline';
-      case 'sent':
-        return 'secondary';
-      case 'approved':
-        return 'default';
-      case 'rejected':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
 
   // Update proforma status mutation
   const updateStatusMutation = useMutation({
-    mutationFn: (status: string) => {
-      return mockDataService.updateProformaStatus(id!, status, status === 'rejected' ? rejectionReason : undefined);
+    mutationFn: async ({ id, status }: { id: string, status: 'sent' | 'approved' | 'rejected' }) => {
+      return mockDataService.updateProformaStatus(id, status);
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
+    onSuccess: (updatedProforma) => {
+      queryClient.setQueryData(['proformaInvoice', id], updatedProforma);
       toast({
         title: 'Status Updated',
-        description: `Proforma invoice status has been updated to ${data.status}`
+        description: `Proforma invoice status updated to ${updatedProforma.status}`
       });
-      setRejectionDialogOpen(false);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update status. Please try again.'
+        description: 'Failed to update status'
       });
+      console.error('Error updating status:', error);
     }
   });
 
   // Convert to final invoice mutation
   const convertToFinalMutation = useMutation({
-    mutationFn: () => {
-      return mockDataService.convertProformaToFinal(id!);
+    mutationFn: async (proformaId: string) => {
+      return mockDataService.convertProformaToFinal(proformaId);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
       queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
+      queryClient.setQueryData(['proformaInvoice', id], data.proforma);
+      
       toast({
         title: 'Proforma Converted',
-        description: 'Proforma has been converted to a final invoice'
+        description: 'Proforma invoice has been converted to a final invoice'
       });
-      // Navigate to the new final invoice
-      if (data.finalInvoiceId) {
-        navigate(`/invoices/final/${data.finalInvoiceId}`);
+      
+      if (data.proforma.finalInvoiceId) {
+        navigate(`/invoices/final/${data.proforma.finalInvoiceId}`);
       }
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to convert to final invoice. Please try again.'
+        description: 'Failed to convert proforma to final invoice'
       });
+      console.error('Error converting proforma:', error);
     }
   });
 
-  // Handle status changes
-  const handleStatusChange = (newStatus: string) => {
-    if (newStatus === 'rejected') {
-      setRejectionDialogOpen(true);
-    } else {
-      updateStatusMutation.mutate(newStatus);
-    }
+  const handleUpdateStatus = (status: 'sent' | 'approved' | 'rejected') => {
+    if (!id) return;
+    updateStatusMutation.mutate({ id, status });
   };
 
-  // Handle conversion to final invoice
   const handleConvertToFinal = () => {
-    convertToFinalMutation.mutate();
+    if (!id) return;
+    convertToFinalMutation.mutate(id);
   };
 
-  // Handle rejection confirmation
-  const handleRejectConfirm = () => {
-    updateStatusMutation.mutate('rejected');
-  };
-
-  // Redirect to NewProformaInvoice if isNewProforma is true
-  if (isNewProforma) {
-    return <Link to="/invoices/proforma/new" style={{ display: 'none' }} id="redirectToNewProforma" />;
-  }
-
-  // Loading state
-  if (!isNewProforma && isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <div className="flex items-center gap-2">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"></span>
+          <span>Loading...</span>
+        </div>
       </div>
     );
   }
 
-  // Error state
-  if (!isNewProforma && error) {
+  if (!proforma) {
     return (
-      <div className="flex h-40 items-center justify-center">
-        <p className="text-red-500">Error loading proforma information</p>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex h-40 flex-col items-center justify-center gap-2">
+            <p className="text-center text-muted-foreground">
+              Proforma invoice not found
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/invoices/proforma">Return to List</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
+
+  const statusColor = {
+    draft: "bg-gray-500",
+    sent: "bg-blue-500",
+    approved: "bg-green-500",
+    rejected: "bg-red-500"
+  };
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('fr-DZ', {
+      style: 'currency',
+      currency: 'DZD',
+      minimumFractionDigits: 2
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-DZ');
+  };
 
   return (
     <div className="space-y-6">
@@ -167,251 +178,260 @@ const ProformaDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewProforma ? 'New Proforma Invoice' : `Proforma: ${proforma?.number}`}
+            Proforma Invoice: {proforma.number}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          {!isNewProforma && proforma?.status && (
-            <Badge variant={getStatusBadgeVariant(proforma.status)}>
-              {proforma.status.charAt(0).toUpperCase() + proforma.status.slice(1)}
-            </Badge>
-          )}
-        </div>
+        <Badge
+          className={`${statusColor[proforma.status]} text-white px-3 py-1 text-xs font-medium uppercase`}
+        >
+          {proforma.status}
+        </Badge>
       </div>
-      
-      {!isNewProforma && proforma ? (
-        <>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-                <CardDescription>Client details for this proforma</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Name:</span>
-                    <span>{proforma.client?.name}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Tax ID:</span>
-                    <span>{proforma.client?.taxId}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Address:</span>
-                    <span>{proforma.client?.address}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">City:</span>
-                    <span>{proforma.client?.city}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Proforma Details</CardTitle>
-                <CardDescription>Information about this document</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Proforma Number:</span>
-                    <span>{proforma.number}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Issue Date:</span>
-                    <span>{proforma.issueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Due Date:</span>
-                    <span>{proforma.dueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <span>
-                      <Badge variant={getStatusBadgeVariant(proforma.status)}>
-                        {proforma.status.charAt(0).toUpperCase() + proforma.status.slice(1)}
-                      </Badge>
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Items</CardTitle>
-              <CardDescription>Products and services in this proforma</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-hidden rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-2 text-left">Product</th>
-                      <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Unit Price</th>
-                      <th className="px-4 py-2 text-right">Tax</th>
-                      <th className="px-4 py-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {proforma.items.map((item) => (
-                      <tr key={item.id} className="border-b">
-                        <td className="px-4 py-2">
-                          <div>
-                            <div className="font-medium">{item.product?.name}</div>
-                            <div className="text-xs text-muted-foreground">{item.product?.description}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-right">{item.quantity}</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.unitPrice)}</td>
-                        <td className="px-4 py-2 text-right">{item.taxRate}%</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-4 space-y-2 border-t pt-4 text-right">
-                <div className="flex justify-between">
-                  <span className="font-medium">Subtotal:</span>
-                  <span>{formatCurrency(proforma.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Tax:</span>
-                  <span>{formatCurrency(proforma.taxTotal)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(proforma.total)}</span>
-                </div>
-              </div>
-              
-              {proforma.notes && (
-                <div className="mt-6 rounded-md border p-4">
-                  <h4 className="mb-2 font-medium">Notes</h4>
-                  <p className="text-sm">{proforma.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
-            {proforma.status === 'draft' && (
-              <Button onClick={() => handleStatusChange('sent')}>
-                Mark as Sent
-              </Button>
-            )}
-            {proforma.status === 'sent' && (
-              <>
-                <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive">
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Reject Proforma Invoice</DialogTitle>
-                      <DialogDescription>
-                        Please provide a reason for rejecting this proforma invoice.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="rejection-reason">Rejection Reason</Label>
-                        <Textarea
-                          id="rejection-reason"
-                          placeholder="Enter the reason for rejection..."
-                          value={rejectionReason}
-                          onChange={(e) => setRejectionReason(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setRejectionDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectionReason.trim()}>
-                        Confirm Rejection
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
 
-                <Button onClick={() => handleStatusChange('approved')}>
-                  <Check className="mr-2 h-4 w-4" />
-                  Approve
-                </Button>
-              </>
-            )}
-            {proforma.status === 'approved' && !proforma.finalInvoiceId && (
-              <Button onClick={handleConvertToFinal}>
-                Convert to Final Invoice
-              </Button>
-            )}
-            {proforma.status === 'approved' && proforma.finalInvoiceId && (
-              <Button asChild>
-                <Link to={`/invoices/final/${proforma.finalInvoiceId}`}>
-                  View Final Invoice
-                </Link>
-              </Button>
-            )}
-          </div>
-        </>
-      ) : isNewProforma ? (
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>New Proforma Invoice</CardTitle>
-            <CardDescription>Create a new proforma invoice</CardDescription>
+            <CardTitle>Client Information</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex justify-center py-8">
-              <Button asChild>
-                <Link to="/invoices/proforma/new">
-                  Create New Proforma
-                </Link>
-              </Button>
+          <CardContent className="space-y-2">
+            <div>
+              <strong className="font-semibold">Name:</strong>{" "}
+              {proforma.client?.name}
+            </div>
+            <div>
+              <strong className="font-semibold">Tax ID:</strong>{" "}
+              {proforma.client?.taxId}
+            </div>
+            <div>
+              <strong className="font-semibold">Address:</strong>{" "}
+              {proforma.client?.address}
+            </div>
+            <div>
+              <strong className="font-semibold">City:</strong>{" "}
+              {proforma.client?.city}, {proforma.client?.country}
+            </div>
+            <div>
+              <strong className="font-semibold">Contact:</strong>{" "}
+              {proforma.client?.phone} | {proforma.client?.email}
             </div>
           </CardContent>
         </Card>
-      ) : (
+
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <FileText className="h-10 w-10 text-muted-foreground/50" />
-              <p className="text-center text-muted-foreground">
-                Proforma invoice not found
-              </p>
-              <Button asChild variant="outline">
-                <Link to="/invoices/proforma">Return to List</Link>
-              </Button>
+          <CardHeader>
+            <CardTitle>Invoice Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div>
+              <strong className="font-semibold">Invoice Number:</strong>{" "}
+              {proforma.number}
             </div>
+            <div>
+              <strong className="font-semibold">Issue Date:</strong>{" "}
+              {formatDate(proforma.issueDate)}
+            </div>
+            <div>
+              <strong className="font-semibold">Due Date:</strong>{" "}
+              {formatDate(proforma.dueDate)}
+            </div>
+            <div>
+              <strong className="font-semibold">Status:</strong>{" "}
+              <Badge
+                className={`${statusColor[proforma.status]} text-white px-2 py-0.5 text-xs font-medium`}
+              >
+                {proforma.status}
+              </Badge>
+            </div>
+            {proforma.finalInvoiceId && (
+              <div>
+                <strong className="font-semibold">Final Invoice:</strong>{" "}
+                <Link
+                  to={`/invoices/final/${proforma.finalInvoiceId}`}
+                  className="text-primary hover:underline"
+                >
+                  View Final Invoice
+                </Link>
+              </div>
+            )}
           </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Items</CardTitle>
+          <CardDescription>Products and services included in this proforma</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead className="text-right">Tax %</TableHead>
+                <TableHead className="text-right">Discount %</TableHead>
+                <TableHead className="text-right">Total Excl.</TableHead>
+                <TableHead className="text-right">Tax Amount</TableHead>
+                <TableHead className="text-right">Total Incl.</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {proforma.items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div className="font-medium">{item.product?.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.product?.code}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">{item.quantity}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                  <TableCell className="text-right">{item.taxRate}%</TableCell>
+                  <TableCell className="text-right">{item.discount}%</TableCell>
+                  <TableCell className="text-right">{formatCurrency(item.totalExcl)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(item.totalTax)}</TableCell>
+                  <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <tfoot>
+              <tr className="border-t">
+                <td colSpan={5} className="px-4 py-2 text-right font-semibold">
+                  Subtotal:
+                </td>
+                <td colSpan={3} className="px-4 py-2 text-right">
+                  {formatCurrency(proforma.subtotal)}
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={5} className="px-4 py-2 text-right font-semibold">
+                  Tax Total:
+                </td>
+                <td colSpan={3} className="px-4 py-2 text-right">
+                  {formatCurrency(proforma.taxTotal)}
+                </td>
+              </tr>
+              <tr className="border-t">
+                <td colSpan={5} className="px-4 py-2 text-right font-bold text-lg">
+                  Total:
+                </td>
+                <td colSpan={3} className="px-4 py-2 text-right font-bold text-lg">
+                  {formatCurrency(proforma.total)}
+                </td>
+              </tr>
+            </tfoot>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {proforma.notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notes</CardTitle>
+          </CardHeader>
+          <CardContent className="whitespace-pre-line">{proforma.notes}</CardContent>
         </Card>
       )}
 
-      {isNewProforma && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              document.addEventListener('DOMContentLoaded', function() {
-                document.getElementById('redirectToNewProforma').click();
-              });
-            `,
-          }}
-        />
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actions</CardTitle>
+          <CardDescription>Manage this proforma invoice</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {/* Send to Client (mark as sent) */}
+          {proforma.status === 'draft' && (
+            <Button
+              variant="outline"
+              onClick={() => handleUpdateStatus('sent')}
+              disabled={updateStatusMutation.isPending}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Mark as Sent
+            </Button>
+          )}
+
+          {/* Approve */}
+          {proforma.status === 'sent' && canApprove && (
+            <Button
+              variant="outline"
+              className="bg-green-50 hover:bg-green-100"
+              onClick={() => handleUpdateStatus('approved')}
+              disabled={updateStatusMutation.isPending}
+            >
+              <ThumbsUp className="mr-2 h-4 w-4 text-green-600" />
+              Approve
+            </Button>
+          )}
+
+          {/* Reject */}
+          {proforma.status === 'sent' && canApprove && (
+            <Button
+              variant="outline"
+              className="bg-red-50 hover:bg-red-100"
+              onClick={() => handleUpdateStatus('rejected')}
+              disabled={updateStatusMutation.isPending}
+            >
+              <ThumbsDown className="mr-2 h-4 w-4 text-red-600" />
+              Reject
+            </Button>
+          )}
+
+          {/* Convert to Final Invoice */}
+          {proforma.status === 'approved' && !proforma.finalInvoiceId && canConvert && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button>
+                  <FileCheck className="mr-2 h-4 w-4" />
+                  Convert to Final Invoice
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Convert to Final Invoice</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will create a final invoice based on this proforma.
+                    Are you sure you want to proceed?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConvertToFinal}
+                    disabled={convertToFinalMutation.isPending}
+                  >
+                    {convertToFinalMutation.isPending ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
+                        Converting...
+                      </>
+                    ) : (
+                      "Convert"
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
+          {/* View Final Invoice */}
+          {proforma.finalInvoiceId && (
+            <Button asChild variant="default">
+              <Link to={`/invoices/final/${proforma.finalInvoiceId}`}>
+                <File className="mr-2 h-4 w-4" />
+                View Final Invoice
+              </Link>
+            </Button>
+          )}
+
+          {/* Print / Download */}
+          <Button variant="outline">
+            <File className="mr-2 h-4 w-4" />
+            Print / Download
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -33,7 +33,6 @@ import {
   ArrowLeft, 
   Plus, 
   Save, 
-  Trash, 
   X 
 } from 'lucide-react';
 import { 
@@ -72,7 +71,7 @@ const deliveryNoteSchema = z.object({
         taxRate: z.number(),
       }).optional()
     })
-  ).nonempty('At least one item is required')
+  ).min(1, 'At least one item is required')
 });
 
 type DeliveryNoteFormValues = z.infer<typeof deliveryNoteSchema>;
@@ -175,7 +174,6 @@ const NewDeliveryNote = () => {
     mutationFn: async (data: DeliveryNoteFormValues) => {
       // Format data for API
       const deliveryNote = {
-        number: `D-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`, // This would come from DB sequence
         clientId: data.clientId,
         finalInvoiceId: invoiceId || undefined,
         issueDate: data.issueDate,

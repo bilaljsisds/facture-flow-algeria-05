@@ -33,7 +33,6 @@ import {
   ArrowLeft, 
   Plus, 
   Save, 
-  Trash, 
   X 
 } from 'lucide-react';
 import { 
@@ -52,7 +51,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getCurrentDate, getFutureDate, generateId } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
 
 // Form validation schema
 const proformaSchema = z.object({
@@ -76,7 +74,7 @@ const proformaSchema = z.object({
         taxRate: z.number(),
       }).optional()
     })
-  ).nonempty('At least one item is required')
+  ).min(1, 'At least one item is required')
 });
 
 type ProformaFormValues = z.infer<typeof proformaSchema>;
@@ -242,7 +240,6 @@ const NewProformaInvoice = () => {
       
       // Format proforma for API
       const proforma = {
-        number: `P-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`, // This would come from DB sequence
         clientId: data.clientId,
         client: clients.find(c => c.id === data.clientId),
         issueDate: data.issueDate,
