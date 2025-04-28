@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, beginTransaction, commitTransaction, rollbackTransaction } from '@/integrations/supabase/client';
 import { 
   Client, 
   Product, 
@@ -132,6 +132,18 @@ export const mockDataService = {
     };
   },
   
+  deleteClient: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error(`Error deleting client ${id}:`, error);
+      throw error;
+    }
+  },
+  
   // Products
   getProducts: async (): Promise<Product[]> => {
     const { data, error } = await supabase
@@ -245,6 +257,18 @@ export const mockDataService = {
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
+  },
+
+  deleteProduct: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error(`Error deleting product ${id}:`, error);
+      throw error;
+    }
   },
   
   // Proforma Invoices
@@ -445,8 +469,7 @@ export const mockDataService = {
   createProformaInvoice: async (proforma: any): Promise<ProformaInvoice> => {
     try {
       // Start a transaction
-      const { error: startError } = await supabase.rpc('begin_transaction');
-      if (startError) throw startError;
+      await beginTransaction();
       
       try {
         // Generate proforma number using database function
@@ -504,15 +527,14 @@ export const mockDataService = {
         }
         
         // Commit the transaction
-        const { error: commitError } = await supabase.rpc('commit_transaction');
-        if (commitError) throw commitError;
+        await commitTransaction();
         
         // Return the created proforma with full data
         return await mockDataService.getProformaInvoiceById(createdInvoice.id);
         
       } catch (error) {
         // Rollback on error
-        await supabase.rpc('rollback_transaction');
+        await rollbackTransaction();
         throw error;
       }
     } catch (error) {
@@ -538,8 +560,7 @@ export const mockDataService = {
   convertProformaToFinal: async (proformaId: string): Promise<{ proforma: ProformaInvoice, finalInvoice: FinalInvoice }> => {
     try {
       // Start a transaction
-      const { error: startError } = await supabase.rpc('begin_transaction');
-      if (startError) throw startError;
+      await beginTransaction();
       
       try {
         // Get the proforma invoice
@@ -594,8 +615,7 @@ export const mockDataService = {
         if (updateError) throw updateError;
         
         // Commit the transaction
-        const { error: commitError } = await supabase.rpc('commit_transaction');
-        if (commitError) throw commitError;
+        await commitTransaction();
         
         // Return updated proforma and new final invoice
         const updatedProforma = await mockDataService.getProformaInvoiceById(proformaId);
@@ -605,7 +625,7 @@ export const mockDataService = {
         
       } catch (error) {
         // Rollback on error
-        await supabase.rpc('rollback_transaction');
+        await rollbackTransaction();
         throw error;
       }
     } catch (error) {
@@ -1025,8 +1045,7 @@ export const mockDataService = {
   createDeliveryNote: async (deliveryNote: any): Promise<DeliveryNote> => {
     try {
       // Start a transaction
-      const { error: startError } = await supabase.rpc('begin_transaction');
-      if (startError) throw startError;
+      await beginTransaction();
       
       try {
         // Generate delivery note number using database function
@@ -1081,15 +1100,14 @@ export const mockDataService = {
         }
         
         // Commit the transaction
-        const { error: commitError } = await supabase.rpc('commit_transaction');
-        if (commitError) throw commitError;
+        await commitTransaction();
         
         // Return the created delivery note with full data
         return await mockDataService.getDeliveryNoteById(createdNote.id);
         
       } catch (error) {
         // Rollback on error
-        await supabase.rpc('rollback_transaction');
+        await rollbackTransaction();
         throw error;
       }
     } catch (error) {

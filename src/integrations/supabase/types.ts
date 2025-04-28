@@ -402,6 +402,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      begin_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      commit_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_delivery_note_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -413,6 +421,10 @@ export type Database = {
       generate_proforma_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      rollback_transaction: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

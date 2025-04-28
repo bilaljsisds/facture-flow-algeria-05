@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -30,7 +29,6 @@ import { ArrowLeft, Save, Trash } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from "@/integrations/supabase/client";
 
-// Form validation schema
 const clientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
@@ -51,7 +49,8 @@ const ClientDetail = () => {
   const isNewClient = id === 'new';
   const [isEditing, setIsEditing] = useState(isNewClient);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
-  
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const { 
     data: client, 
     isLoading, 
@@ -101,7 +100,6 @@ const ClientDetail = () => {
 
   const createMutation = useMutation({
     mutationFn: (data: ClientFormValues) => {
-      // Make sure all required fields are defined and not optional
       const newClient = {
         name: data.name,
         address: data.address,
@@ -132,7 +130,6 @@ const ClientDetail = () => {
   
   const updateMutation = useMutation({
     mutationFn: (data: ClientFormValues) => {
-      // Fix: Explicitly define all required properties as non-optional
       const updatedClient = {
         name: data.name,
         address: data.address,
@@ -163,22 +160,24 @@ const ClientDetail = () => {
   });
   
   const deleteMutation = useMutation({
-    mutationFn: () => mockDataService.deleteClient(id!),
+    mutationFn: () => mockDataService.deleteClient(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: 'Client deleted',
-        description: 'Client has been successfully deleted',
+        title: 'Client Deleted',
+        description: 'Client has been successfully deleted'
       });
       navigate('/clients');
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete client. Please try again.',
+        description: 'Failed to delete client. It may be referenced by invoices or delivery notes.'
       });
-    },
+      console.error('Error deleting client:', error);
+      setDeleteDialogOpen(false);
+    }
   });
 
   const onSubmit = (data: ClientFormValues) => {
@@ -188,7 +187,20 @@ const ClientDetail = () => {
       updateMutation.mutate(data);
     }
   };
-  
+
+  const deleteHandler = () => {
+    if (canEdit) {
+      deleteMutation.mutate();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Permission Denied',
+        description: 'You do not have permission to delete clients'
+      });
+      setDeleteDialogOpen(false);
+    }
+  };
+
   if (!isNewClient && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -242,7 +254,7 @@ const ClientDetail = () => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction 
-                    onClick={() => deleteMutation.mutate()}
+                    onClick={() => deleteHandler()}
                     className="bg-red-600 hover:bg-red-700"
                   >
                     Delete

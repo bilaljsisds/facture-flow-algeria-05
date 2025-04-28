@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -61,43 +60,40 @@ const ProformaDetail = () => {
   });
 
   // Update proforma status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: 'sent' | 'approved' | 'rejected' }) => {
+  const statusUpdateMutation = useMutation({
+    mutationFn: (status: 'draft' | 'sent' | 'approved' | 'rejected') => {
       return mockDataService.updateProformaStatus(id, status);
     },
-    onSuccess: (updatedProforma) => {
-      queryClient.setQueryData(['proformaInvoice', id], updatedProforma);
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['proformaInvoice', id] });
       toast({
         title: 'Status Updated',
-        description: `Proforma invoice status updated to ${updatedProforma.status}`
+        description: `Proforma invoice status changed to ${data.status}`
       });
     },
     onError: (error) => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to update status'
+        description: 'Failed to update status. Please try again.'
       });
-      console.error('Error updating status:', error);
+      console.error('Error updating proforma status:', error);
     }
   });
 
   // Convert to final invoice mutation
-  const convertToFinalMutation = useMutation({
-    mutationFn: async (proformaId: string) => {
-      return mockDataService.convertProformaToFinal(proformaId);
+  const convertMutation = useMutation({
+    mutationFn: () => {
+      return mockDataService.convertProformaToFinal(id);
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
-      queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
-      queryClient.setQueryData(['proformaInvoice', id], data.proforma);
-      
+      queryClient.invalidateQueries({ queryKey: ['proformaInvoice', id] });
       toast({
         title: 'Proforma Converted',
-        description: 'Proforma invoice has been converted to a final invoice'
+        description: 'Successfully converted to final invoice'
       });
-      
-      if (data.proforma.finalInvoiceId) {
+      // If finalInvoiceId is available, navigate to it
+      if (data.proforma && data.proforma.finalInvoiceId) {
         navigate(`/invoices/final/${data.proforma.finalInvoiceId}`);
       }
     },
@@ -105,20 +101,20 @@ const ProformaDetail = () => {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to convert proforma to final invoice'
+        description: 'Failed to convert to final invoice. Please try again.'
       });
-      console.error('Error converting proforma:', error);
+      console.error('Error converting proforma to final:', error);
     }
   });
 
-  const handleUpdateStatus = (status: 'sent' | 'approved' | 'rejected') => {
+  const handleUpdateStatus = (status: 'draft' | 'sent' | 'approved' | 'rejected') => {
     if (!id) return;
-    updateStatusMutation.mutate({ id, status });
+    statusUpdateMutation.mutate(status);
   };
 
   const handleConvertToFinal = () => {
     if (!id) return;
-    convertToFinalMutation.mutate(id);
+    convertMutation.mutate();
   };
 
   if (isLoading) {
@@ -345,7 +341,7 @@ const ProformaDetail = () => {
             <Button
               variant="outline"
               onClick={() => handleUpdateStatus('sent')}
-              disabled={updateStatusMutation.isPending}
+              disabled={statusUpdateMutation.isPending}
             >
               <Send className="mr-2 h-4 w-4" />
               Mark as Sent
@@ -358,7 +354,7 @@ const ProformaDetail = () => {
               variant="outline"
               className="bg-green-50 hover:bg-green-100"
               onClick={() => handleUpdateStatus('approved')}
-              disabled={updateStatusMutation.isPending}
+              disabled={statusUpdateMutation.isPending}
             >
               <ThumbsUp className="mr-2 h-4 w-4 text-green-600" />
               Approve
@@ -371,7 +367,7 @@ const ProformaDetail = () => {
               variant="outline"
               className="bg-red-50 hover:bg-red-100"
               onClick={() => handleUpdateStatus('rejected')}
-              disabled={updateStatusMutation.isPending}
+              disabled={statusUpdateMutation.isPending}
             >
               <ThumbsDown className="mr-2 h-4 w-4 text-red-600" />
               Reject
@@ -399,9 +395,9 @@ const ProformaDetail = () => {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleConvertToFinal}
-                    disabled={convertToFinalMutation.isPending}
+                    disabled={convertMutation.isPending}
                   >
-                    {convertToFinalMutation.isPending ? (
+                    {convertMutation.isPending ? (
                       <>
                         <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
                         Converting...
