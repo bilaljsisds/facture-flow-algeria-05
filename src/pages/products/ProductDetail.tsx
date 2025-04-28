@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+
 import {
   Card,
   CardContent,
@@ -46,7 +47,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react'; // <-- make sure useEffect is imported
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -93,7 +94,7 @@ const ProductDetail = () => {
   });
 
   // Set default values when product is loaded
-  useState(() => {
+  useEffect(() => {
     if (product) {
       form.reset(product);
     }
