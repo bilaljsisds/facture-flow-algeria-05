@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -122,9 +121,21 @@ const ClientDetail = () => {
     },
   });
   
-  // Update client mutation
+  // Update client mutation - Fixed the type issue
   const updateMutation = useMutation({
-    mutationFn: (data: ClientFormValues) => mockDataService.updateClient(id!, data),
+    mutationFn: (data: ClientFormValues) => {
+      // Ensure all required fields are provided
+      const updatedClient = {
+        name: data.name,
+        address: data.address,
+        taxId: data.taxId,
+        phone: data.phone,
+        email: data.email,
+        country: data.country,
+        city: data.city
+      };
+      return mockDataService.updateClient(id!, updatedClient);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client', id] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });

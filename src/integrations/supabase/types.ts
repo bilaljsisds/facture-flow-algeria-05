@@ -9,13 +9,411 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string
+          city: string
+          country: string
+          createdat: string | null
+          email: string
+          id: string
+          name: string
+          phone: string
+          taxid: string
+          updatedat: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          country: string
+          createdat?: string | null
+          email: string
+          id?: string
+          name: string
+          phone: string
+          taxid: string
+          updatedat?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          country?: string
+          createdat?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string
+          taxid?: string
+          updatedat?: string | null
+        }
+        Relationships: []
+      }
+      delivery_note_items: {
+        Row: {
+          deliverynoteid: string
+          itemid: string
+        }
+        Insert: {
+          deliverynoteid: string
+          itemid: string
+        }
+        Update: {
+          deliverynoteid?: string
+          itemid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_note_items_deliverynoteid_fkey"
+            columns: ["deliverynoteid"]
+            isOneToOne: false
+            referencedRelation: "delivery_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_note_items_itemid_fkey"
+            columns: ["itemid"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_notes: {
+        Row: {
+          clientid: string
+          createdat: string | null
+          deliverydate: string | null
+          finalinvoiceid: string | null
+          id: string
+          issuedate: string
+          notes: string | null
+          number: string
+          status: string
+          updatedat: string | null
+        }
+        Insert: {
+          clientid: string
+          createdat?: string | null
+          deliverydate?: string | null
+          finalinvoiceid?: string | null
+          id?: string
+          issuedate: string
+          notes?: string | null
+          number: string
+          status: string
+          updatedat?: string | null
+        }
+        Update: {
+          clientid?: string
+          createdat?: string | null
+          deliverydate?: string | null
+          finalinvoiceid?: string | null
+          id?: string
+          issuedate?: string
+          notes?: string | null
+          number?: string
+          status?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_notes_clientid_fkey"
+            columns: ["clientid"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_notes_finalinvoiceid_fkey"
+            columns: ["finalinvoiceid"]
+            isOneToOne: false
+            referencedRelation: "final_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      final_invoice_items: {
+        Row: {
+          finalinvoiceid: string
+          itemid: string
+        }
+        Insert: {
+          finalinvoiceid: string
+          itemid: string
+        }
+        Update: {
+          finalinvoiceid?: string
+          itemid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "final_invoice_items_finalinvoiceid_fkey"
+            columns: ["finalinvoiceid"]
+            isOneToOne: false
+            referencedRelation: "final_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "final_invoice_items_itemid_fkey"
+            columns: ["itemid"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      final_invoices: {
+        Row: {
+          clientid: string
+          createdat: string | null
+          duedate: string
+          id: string
+          issuedate: string
+          notes: string | null
+          number: string
+          paymentdate: string | null
+          paymentreference: string | null
+          proformaid: string | null
+          status: string
+          subtotal: number
+          taxtotal: number
+          total: number
+          updatedat: string | null
+        }
+        Insert: {
+          clientid: string
+          createdat?: string | null
+          duedate: string
+          id?: string
+          issuedate: string
+          notes?: string | null
+          number: string
+          paymentdate?: string | null
+          paymentreference?: string | null
+          proformaid?: string | null
+          status: string
+          subtotal: number
+          taxtotal: number
+          total: number
+          updatedat?: string | null
+        }
+        Update: {
+          clientid?: string
+          createdat?: string | null
+          duedate?: string
+          id?: string
+          issuedate?: string
+          notes?: string | null
+          number?: string
+          paymentdate?: string | null
+          paymentreference?: string | null
+          proformaid?: string | null
+          status?: string
+          subtotal?: number
+          taxtotal?: number
+          total?: number
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "final_invoices_clientid_fkey"
+            columns: ["clientid"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "final_invoices_proformaid_fkey"
+            columns: ["proformaid"]
+            isOneToOne: false
+            referencedRelation: "proforma_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          discount: number
+          id: string
+          productid: string | null
+          quantity: number
+          taxrate: number
+          total: number
+          totalexcl: number
+          totaltax: number
+          unitprice: number
+        }
+        Insert: {
+          discount?: number
+          id?: string
+          productid?: string | null
+          quantity: number
+          taxrate: number
+          total: number
+          totalexcl: number
+          totaltax: number
+          unitprice: number
+        }
+        Update: {
+          discount?: number
+          id?: string
+          productid?: string | null
+          quantity?: number
+          taxrate?: number
+          total?: number
+          totalexcl?: number
+          totaltax?: number
+          unitprice?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_productid_fkey"
+            columns: ["productid"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          code: string
+          createdat: string | null
+          description: string
+          id: string
+          name: string
+          stockquantity: number
+          taxrate: number
+          unitprice: number
+          updatedat: string | null
+        }
+        Insert: {
+          code: string
+          createdat?: string | null
+          description: string
+          id?: string
+          name: string
+          stockquantity?: number
+          taxrate: number
+          unitprice: number
+          updatedat?: string | null
+        }
+        Update: {
+          code?: string
+          createdat?: string | null
+          description?: string
+          id?: string
+          name?: string
+          stockquantity?: number
+          taxrate?: number
+          unitprice?: number
+          updatedat?: string | null
+        }
+        Relationships: []
+      }
+      proforma_invoice_items: {
+        Row: {
+          itemid: string
+          proformainvoiceid: string
+        }
+        Insert: {
+          itemid: string
+          proformainvoiceid: string
+        }
+        Update: {
+          itemid?: string
+          proformainvoiceid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proforma_invoice_items_itemid_fkey"
+            columns: ["itemid"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proforma_invoice_items_proformainvoiceid_fkey"
+            columns: ["proformainvoiceid"]
+            isOneToOne: false
+            referencedRelation: "proforma_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proforma_invoices: {
+        Row: {
+          clientid: string
+          createdat: string | null
+          duedate: string
+          finalinvoiceid: string | null
+          id: string
+          issuedate: string
+          notes: string | null
+          number: string
+          status: string
+          subtotal: number
+          taxtotal: number
+          total: number
+          updatedat: string | null
+        }
+        Insert: {
+          clientid: string
+          createdat?: string | null
+          duedate: string
+          finalinvoiceid?: string | null
+          id?: string
+          issuedate: string
+          notes?: string | null
+          number: string
+          status: string
+          subtotal: number
+          taxtotal: number
+          total: number
+          updatedat?: string | null
+        }
+        Update: {
+          clientid?: string
+          createdat?: string | null
+          duedate?: string
+          finalinvoiceid?: string | null
+          id?: string
+          issuedate?: string
+          notes?: string | null
+          number?: string
+          status?: string
+          subtotal?: number
+          taxtotal?: number
+          total?: number
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proforma_invoices_clientid_fkey"
+            columns: ["clientid"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_delivery_note_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_proforma_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

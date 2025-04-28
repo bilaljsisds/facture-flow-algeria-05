@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +8,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -121,7 +119,17 @@ const ProductDetail = () => {
   
   // Update product mutation
   const updateMutation = useMutation({
-    mutationFn: (data: ProductFormValues) => mockDataService.updateProduct(id!, data),
+    mutationFn: (data: ProductFormValues) => {
+      const updatedProduct = {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        unitPrice: data.unitPrice,
+        taxRate: data.taxRate,
+        stockQuantity: data.stockQuantity
+      };
+      return mockDataService.updateProduct(id!, updatedProduct);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
