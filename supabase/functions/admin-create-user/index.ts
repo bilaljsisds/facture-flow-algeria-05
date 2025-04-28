@@ -19,35 +19,48 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { data: authUsers, error } = await supabase.auth.admin.listUsers();
-    
-    if (error) {
-      throw error;
+    if (!supabaseServiceKey) {
+      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
     }
     
-    // Format users before returning
-    const formattedUsers = authUsers.users.map((user) => ({
-      id: user.id,
-      email: user.email || "",
-      name: user.user_metadata?.name || user.email?.split("@")[0] || "Unnamed User",
-      role: user.user_metadata?.role || "viewer",
-      active: user.user_metadata?.active !== false,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at || user.created_at,
-    }));
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    return new Response(JSON.stringify({ users: formattedUsers }), {
+    // Get user data from request
+    const { user } = await req.json();
+    
+    if (!user || !user.email || !user.password) {
+      throw new Error("Email and password are required");
+    }
+    
+    // Create the user
+    const { data: userData, error: createError } = await supabase.auth.admin.createUser({
+      email: user.email,
+      password: user.password,
+      email_confirm: true,
+      user_metadata: {
+        name: user.name,
+        role: user.role,
+        active: user.active
+      }
+    });
+    
+    if (createError) {
+      throw createError;
+    }
+    
+    return new Response(JSON.stringify({ 
+      message: "User created successfully", 
+      user: userData.user 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+      status: 201,
     });
     
   } catch (error) {
-    console.error("Error in admin-users function:", error);
+    console.error("Error in admin-create-user function:", error);
     
     return new Response(JSON.stringify({ 
-      error: "Failed to fetch users. Make sure service role key is configured." 
+      error: error instanceof Error ? error.message : "Failed to create user" 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

@@ -70,21 +70,66 @@ const UserDetail = () => {
       const fetchUser = async () => {
         try {
           setIsLoading(true);
-          const mockUser = {
-            id: id,
-            name: 'Sample User', 
-            email: 'user@example.com',
-            role: UserRole.VIEWER,
-            active: true
-          };
           
-          form.reset({
-            name: mockUser.name,
-            email: mockUser.email,
-            role: mockUser.role,
-            active: mockUser.active,
-            password: '',
-          });
+          const { data, error } = await supabase.functions.invoke('admin-users');
+          
+          if (error) {
+            throw error;
+          }
+          
+          let userData = null;
+          
+          if (data && data.users) {
+            userData = data.users.find((user: any) => user.id === id);
+          }
+          
+          if (userData) {
+            form.reset({
+              name: userData.name,
+              email: userData.email,
+              role: userData.role as UserRole,
+              active: userData.active,
+              password: '',
+            });
+          } else {
+            try {
+              const { data: currentUserData } = await supabase.auth.getUser();
+              if (currentUserData && currentUserData.user && currentUserData.user.id === id) {
+                form.reset({
+                  name: currentUserData.user.user_metadata?.name || currentUserData.user.email?.split('@')[0] || 'Current User',
+                  email: currentUserData.user.email || '',
+                  role: (currentUserData.user.user_metadata?.role as UserRole) || UserRole.VIEWER,
+                  active: currentUserData.user.user_metadata?.active !== false,
+                  password: '',
+                });
+              } else {
+                throw new Error('User not found');
+              }
+            } catch (authError) {
+              console.error('Error fetching user data:', authError);
+              const mockUser = {
+                id: id,
+                name: 'Sample User', 
+                email: 'user@example.com',
+                role: UserRole.VIEWER,
+                active: true
+              };
+              
+              form.reset({
+                name: mockUser.name,
+                email: mockUser.email,
+                role: mockUser.role,
+                active: mockUser.active,
+                password: '',
+              });
+              
+              toast({
+                variant: 'destructive',
+                title: 'User not found',
+                description: 'Using sample data. Real user data could not be retrieved.',
+              });
+            }
+          }
         } catch (error) {
           console.error('Error fetching user:', error);
           toast({
@@ -106,11 +151,27 @@ const UserDetail = () => {
       setIsLoading(true);
       
       if (isNewUser) {
-        toast({
-          title: 'User creation limited',
-          description: `To create users with the admin API, you need to use the Supabase service role key. For now, users can sign up directly through the registration page.`,
-          variant: 'destructive'
-        });
+        try {
+          const { data, error } = await supabase.functions.invoke('admin-create-user', {
+            body: { user: values }
+          });
+          
+          if (error) throw error;
+          
+          toast({
+            title: 'User created',
+            description: `User ${values.name} has been created successfully.`,
+          });
+          
+          navigate('/admin/users');
+        } catch (fnError) {
+          console.error('Edge function error:', fnError);
+          toast({
+            title: 'Edge function not available',
+            description: `To create users with the admin API, you need to implement the admin-create-user edge function. For now, users can sign up directly through the registration page.`,
+            variant: 'destructive'
+          });
+        }
       } else {
         const { error } = await supabase.auth.updateUser({
           data: {

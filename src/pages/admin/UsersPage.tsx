@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -24,6 +23,7 @@ import { Search, Plus, Users, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { User } from '@/types';
+import { mapSupabaseAuthUserToDomainUser } from '@/utils/supabaseHelpers';
 
 const UsersPage = () => {
   const { checkPermission } = useAuth();
@@ -36,59 +36,57 @@ const UsersPage = () => {
       try {
         setIsLoading(true);
         
-        // Note: This will only work in edge functions or server-side code with the service_role key
-        // For frontend usage, it will fail with "not_admin" error
-        const { data, error } = await supabase.auth.getUser();
+        // Fetch users from our Edge Function that uses the service role key
+        const { data, error } = await supabase.functions.invoke('admin-users');
         
         if (error) {
           throw error;
         }
         
-        // For demonstration, since we can't call admin API from frontend
-        // and service role key should never be exposed in client code
-        // we'll use mock data until a proper backend API is implemented
-        
-        const mockUsers: User[] = [
-          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
-          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
-          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
-          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
-          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
-          // Add current user if logged in
-          ...(data?.user ? [{
-            id: data.user.id,
-            email: data.user.email || '',
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Current User',
-            role: (data.user.user_metadata?.role as UserRole) || UserRole.VIEWER,
-            active: true,
-            createdAt: data.user.created_at,
-            updatedAt: data.user.created_at,
-          }] : [])
-        ];
-        
-        toast({
-          title: 'Note about User Management',
-          description: 'Showing mock data. To manage real users requires a secure backend API with service role key.',
-        });
-        
-        setUsers(mockUsers);
+        if (data && data.users) {
+          setUsers(data.users);
+          toast({
+            title: 'Users loaded',
+            description: 'Successfully loaded users from the system',
+          });
+        } else {
+          throw new Error('Invalid response from admin-users function');
+        }
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load users. Admin API requires service role key from a secure backend.',
+          description: 'Failed to load users. Check service role key configuration.',
         });
         
-        const mockUsers: User[] = [
-          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
-          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
-          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
-          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
-          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
-        ];
-        
-        setUsers(mockUsers);
+        // If Edge Function fails, get current user at minimum
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData && userData.user) {
+            const currentUser = mapSupabaseAuthUserToDomainUser(userData.user);
+            setUsers([currentUser]);
+          } else {
+            // Fallback to mock data if no user is available
+            setUsers([
+              { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+              { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+              { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
+              { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
+              { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
+            ]);
+          }
+        } catch (authError) {
+          console.error('Error fetching current user:', authError);
+          // Keep the mock data
+          setUsers([
+            { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+            { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+            { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
+            { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
+            { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
+          ]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -141,10 +139,7 @@ const UsersPage = () => {
         <CardHeader>
           <CardTitle>System Users</CardTitle>
           <CardDescription>
-            Manage access and permissions for users. 
-            <span className="block text-amber-600 mt-1">
-              Note: For security reasons, admin operations require a backend API with service role key.
-            </span>
+            Manage access and permissions for users.
           </CardDescription>
         </CardHeader>
         <CardContent>

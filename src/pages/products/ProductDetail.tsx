@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -24,16 +23,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { mockDataService } from '@/services/mockDataService';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import {
   ArrowLeft,
-  Check,
-  CircleDollarSign,
-  Clipboard,
-  FileEdit,
   Loader2,
-  Package2,
   Save,
   Trash,
 } from 'lucide-react';
@@ -52,6 +45,7 @@ import { useEffect, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { mapDbProductToDomainProduct, mapDomainProductToDb } from '@/utils/supabaseHelpers';
 
 // Form validation schema
 const productSchema = z.object({
@@ -88,9 +82,9 @@ const ProductDetail = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return mapDbProductToDomainProduct(data);
     },
-    enabled: !!id,
+    enabled: !!id && id !== 'new',
   });
 
   const form = useForm<ProductFormValues>({
@@ -109,21 +103,37 @@ const ProductDetail = () => {
   // Set default values when product is loaded
   useEffect(() => {
     if (product) {
-      form.reset(product);
+      form.reset({
+        code: product.code,
+        name: product.name,
+        description: product.description,
+        unitprice: product.unitprice,
+        taxrate: product.taxrate,
+        stockquantity: product.stockquantity,
+      });
     }
   }, [product, form]);
 
   // Create product
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
+      const productData = {
+        code: data.code,
+        name: data.name,
+        description: data.description || '',
+        unitprice: data.unitprice,
+        taxrate: data.taxrate,
+        stockquantity: data.stockquantity
+      };
+      
       const { data: newProduct, error } = await supabase
         .from('products')
-        .insert([data])
+        .insert(productData)
         .select()
         .single();
       
       if (error) throw error;
-      return newProduct;
+      return mapDbProductToDomainProduct(newProduct);
     },
     onSuccess: () => {
       toast({
@@ -145,15 +155,24 @@ const ProductDetail = () => {
   // Update product
   const updateMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
+      const productData = {
+        code: data.code,
+        name: data.name,
+        description: data.description || '',
+        unitprice: data.unitprice,
+        taxrate: data.taxrate,
+        stockquantity: data.stockquantity
+      };
+      
       const { data: updatedProduct, error } = await supabase
         .from('products')
-        .update(data)
+        .update(productData)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
-      return updatedProduct;
+      return mapDbProductToDomainProduct(updatedProduct);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
@@ -406,6 +425,7 @@ const ProductDetail = () => {
                         placeholder="Enter product description"
                         className="min-h-[80px]"
                         {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormMessage />

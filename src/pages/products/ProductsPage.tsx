@@ -23,6 +23,7 @@ import { Product } from '@/types';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Package2, Plus, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { mapDbProductToDomainProduct } from '@/utils/supabaseHelpers';
 
 const ProductsPage = () => {
   const { checkPermission } = useAuth();
@@ -38,7 +39,7 @@ const ProductsPage = () => {
         .order('name', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return data ? data.map(mapDbProductToDomainProduct) : [];
     },
   });
 
