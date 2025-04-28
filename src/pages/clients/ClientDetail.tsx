@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -118,6 +119,7 @@ const ClientDetail = () => {
   
   const updateMutation = useMutation({
     mutationFn: (data: ClientFormValues) => {
+      // Fix: Explicitly define all required properties as non-optional
       const updatedClient = {
         name: data.name,
         address: data.address,

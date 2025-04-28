@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -115,6 +116,7 @@ const ProductDetail = () => {
   
   const updateMutation = useMutation({
     mutationFn: (data: ProductFormValues) => {
+      // Fix: Explicitly define all required properties as non-optional
       const updatedProduct = {
         code: data.code,
         name: data.name,
