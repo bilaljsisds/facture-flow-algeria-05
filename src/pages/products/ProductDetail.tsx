@@ -50,7 +50,6 @@ const ProductDetail = () => {
   const [isEditing, setIsEditing] = useState(isNewProduct);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   
-  // Fetch product data if not a new product
   const { 
     data: product, 
     isLoading, 
@@ -61,7 +60,6 @@ const ProductDetail = () => {
     enabled: !isNewProduct,
   });
 
-  // Form setup
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: isNewProduct 
@@ -83,7 +81,6 @@ const ProductDetail = () => {
         },
   });
   
-  // Update form values when product data is loaded
   React.useEffect(() => {
     if (!isNewProduct && product) {
       form.reset({
@@ -97,7 +94,6 @@ const ProductDetail = () => {
     }
   }, [product, form, isNewProduct]);
 
-  // Create product mutation
   const createMutation = useMutation({
     mutationFn: (data: ProductFormValues) => mockDataService.createProduct(data),
     onSuccess: () => {
@@ -117,7 +113,6 @@ const ProductDetail = () => {
     },
   });
   
-  // Update product mutation
   const updateMutation = useMutation({
     mutationFn: (data: ProductFormValues) => {
       const updatedProduct = {
@@ -148,7 +143,6 @@ const ProductDetail = () => {
     },
   });
   
-  // Delete product mutation
   const deleteMutation = useMutation({
     mutationFn: () => mockDataService.deleteProduct(id!),
     onSuccess: () => {
@@ -168,7 +162,6 @@ const ProductDetail = () => {
     },
   });
 
-  // Form submission handler
   const onSubmit = (data: ProductFormValues) => {
     if (isNewProduct) {
       createMutation.mutate(data);
@@ -177,7 +170,6 @@ const ProductDetail = () => {
     }
   };
   
-  // Handle loading state
   if (!isNewProduct && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -186,7 +178,6 @@ const ProductDetail = () => {
     );
   }
   
-  // Handle error state
   if (!isNewProduct && error) {
     return (
       <div className="flex h-40 items-center justify-center">

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -51,7 +50,6 @@ const ClientDetail = () => {
   const [isEditing, setIsEditing] = useState(isNewClient);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   
-  // Fetch client data if not a new client
   const { 
     data: client, 
     isLoading, 
@@ -62,7 +60,6 @@ const ClientDetail = () => {
     enabled: !isNewClient,
   });
 
-  // Form setup
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues: isNewClient 
@@ -86,7 +83,6 @@ const ClientDetail = () => {
         },
   });
   
-  // Update form values when client data is loaded
   React.useEffect(() => {
     if (!isNewClient && client) {
       form.reset({
@@ -101,7 +97,6 @@ const ClientDetail = () => {
     }
   }, [client, form, isNewClient]);
 
-  // Create client mutation
   const createMutation = useMutation({
     mutationFn: (data: ClientFormValues) => mockDataService.createClient(data),
     onSuccess: () => {
@@ -121,10 +116,8 @@ const ClientDetail = () => {
     },
   });
   
-  // Update client mutation - Fixed the type issue
   const updateMutation = useMutation({
     mutationFn: (data: ClientFormValues) => {
-      // Ensure all required fields are provided
       const updatedClient = {
         name: data.name,
         address: data.address,
@@ -154,7 +147,6 @@ const ClientDetail = () => {
     },
   });
   
-  // Delete client mutation
   const deleteMutation = useMutation({
     mutationFn: () => mockDataService.deleteClient(id!),
     onSuccess: () => {
@@ -174,7 +166,6 @@ const ClientDetail = () => {
     },
   });
 
-  // Form submission handler
   const onSubmit = (data: ClientFormValues) => {
     if (isNewClient) {
       createMutation.mutate(data);
@@ -183,7 +174,6 @@ const ClientDetail = () => {
     }
   };
   
-  // Handle loading state
   if (!isNewClient && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -192,7 +182,6 @@ const ClientDetail = () => {
     );
   }
   
-  // Handle error state
   if (!isNewClient && error) {
     return (
       <div className="flex h-40 items-center justify-center">
