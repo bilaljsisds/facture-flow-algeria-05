@@ -28,6 +28,7 @@ import { mockDataService } from '@/services/mockDataService';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { ArrowLeft, Save, Trash } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { supabase } from "@/integrations/supabase/client";
 
 // Form validation schema
 const clientSchema = z.object({
@@ -99,7 +100,19 @@ const ClientDetail = () => {
   }, [client, form, isNewClient]);
 
   const createMutation = useMutation({
-    mutationFn: (data: ClientFormValues) => mockDataService.createClient(data),
+    mutationFn: (data: ClientFormValues) => {
+      // Make sure all required fields are defined and not optional
+      const newClient = {
+        name: data.name,
+        address: data.address,
+        taxId: data.taxId,
+        phone: data.phone,
+        email: data.email,
+        country: data.country,
+        city: data.city
+      };
+      return mockDataService.createClient(newClient);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,21 +22,21 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import { mockDataService } from '@/services/mockDataService';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { ArrowLeft, Save, Trash } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { supabase } from "@/integrations/supabase/client";
 
 // Form validation schema
 const productSchema = z.object({
-  code: z.string().min(2, 'Product code must be at least 2 characters'),
-  name: z.string().min(3, 'Product name must be at least 3 characters'),
-  description: z.string(),
-  unitPrice: z.coerce.number().min(0, 'Price cannot be negative'),
-  taxRate: z.coerce.number().min(0, 'Tax rate cannot be negative').max(100, 'Tax rate cannot exceed 100%'),
-  stockQuantity: z.coerce.number().min(0, 'Stock quantity cannot be negative'),
+  code: z.string().min(2, 'Code must be at least 2 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  description: z.string().min(5, 'Description must be at least 5 characters'),
+  unitPrice: z.coerce.number().min(0, 'Unit price must be positive'),
+  taxRate: z.coerce.number().min(0, 'Tax rate must be positive'),
+  stockQuantity: z.coerce.number().min(0, 'Stock quantity must be non-negative'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -96,7 +95,17 @@ const ProductDetail = () => {
   }, [product, form, isNewProduct]);
 
   const createMutation = useMutation({
-    mutationFn: (data: ProductFormValues) => mockDataService.createProduct(data),
+    mutationFn: (data: ProductFormValues) => {
+      const newProduct = {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        unitPrice: data.unitPrice,
+        taxRate: data.taxRate,
+        stockQuantity: data.stockQuantity
+      };
+      return mockDataService.createProduct(newProduct);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
@@ -116,7 +125,6 @@ const ProductDetail = () => {
   
   const updateMutation = useMutation({
     mutationFn: (data: ProductFormValues) => {
-      // Fix: Explicitly define all required properties as non-optional
       const updatedProduct = {
         code: data.code,
         name: data.name,

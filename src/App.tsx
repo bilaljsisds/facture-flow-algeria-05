@@ -20,10 +20,12 @@ import ProductsPage from "@/pages/products/ProductsPage";
 import ProductDetail from "@/pages/products/ProductDetail";
 import ProformaInvoicesPage from "@/pages/invoices/ProformaInvoicesPage";
 import ProformaDetail from "@/pages/invoices/ProformaDetail";
+import NewProformaInvoice from "@/pages/invoices/NewProformaInvoice";
 import FinalInvoicesPage from "@/pages/invoices/FinalInvoicesPage";
 import FinalInvoiceDetail from "@/pages/invoices/FinalInvoiceDetail";
 import DeliveryNotesPage from "@/pages/delivery/DeliveryNotesPage";
 import DeliveryNoteDetail from "@/pages/delivery/DeliveryNoteDetail";
+import NewDeliveryNote from "@/pages/delivery/NewDeliveryNote";
 import Etat104Page from "@/pages/reports/Etat104Page";
 import UsersPage from "@/pages/admin/UsersPage";
 import UserDetail from "@/pages/admin/UserDetail";
@@ -55,12 +57,14 @@ const App = () => (
               
               <Route path="/invoices/proforma" element={<ProformaInvoicesPage />} />
               <Route path="/invoices/proforma/:id" element={<ProformaDetail />} />
+              <Route path="/invoices/proforma/new" element={<NewProformaInvoice />} />
               
               <Route path="/invoices/final" element={<FinalInvoicesPage />} />
               <Route path="/invoices/final/:id" element={<FinalInvoiceDetail />} />
               
               <Route path="/delivery-notes" element={<DeliveryNotesPage />} />
               <Route path="/delivery-notes/:id" element={<DeliveryNoteDetail />} />
+              <Route path="/delivery-notes/new" element={<NewDeliveryNote />} />
               
               <Route path="/reports/etat104" element={<Etat104Page />} />
               

@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -12,16 +11,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Check, X } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProformaDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isNewProforma = id === 'new';
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
   
   // Fetch proforma data if not new
   const { 
     data: proformas = [],
-    isLoading 
+    isLoading,
+    error 
   } = useQuery({
     queryKey: ['proformaInvoices'],
     queryFn: () => mockDataService.getProformaInvoices(),
@@ -58,11 +67,92 @@ const ProformaDetail = () => {
     }
   };
 
+  // Update proforma status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: string) => {
+      return mockDataService.updateProformaStatus(id!, status, status === 'rejected' ? rejectionReason : undefined);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
+      toast({
+        title: 'Status Updated',
+        description: `Proforma invoice status has been updated to ${data.status}`
+      });
+      setRejectionDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update status. Please try again.'
+      });
+    }
+  });
+
+  // Convert to final invoice mutation
+  const convertToFinalMutation = useMutation({
+    mutationFn: () => {
+      return mockDataService.convertProformaToFinal(id!);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
+      queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
+      toast({
+        title: 'Proforma Converted',
+        description: 'Proforma has been converted to a final invoice'
+      });
+      // Navigate to the new final invoice
+      if (data.finalInvoiceId) {
+        navigate(`/invoices/final/${data.finalInvoiceId}`);
+      }
+    },
+    onError: () => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to convert to final invoice. Please try again.'
+      });
+    }
+  });
+
+  // Handle status changes
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'rejected') {
+      setRejectionDialogOpen(true);
+    } else {
+      updateStatusMutation.mutate(newStatus);
+    }
+  };
+
+  // Handle conversion to final invoice
+  const handleConvertToFinal = () => {
+    convertToFinalMutation.mutate();
+  };
+
+  // Handle rejection confirmation
+  const handleRejectConfirm = () => {
+    updateStatusMutation.mutate('rejected');
+  };
+
+  // Redirect to NewProformaInvoice if isNewProforma is true
+  if (isNewProforma) {
+    return <Link to="/invoices/proforma/new" style={{ display: 'none' }} id="redirectToNewProforma" />;
+  }
+
   // Loading state
   if (!isNewProforma && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (!isNewProforma && error) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <p className="text-red-500">Error loading proforma information</p>
       </div>
     );
   }
@@ -217,13 +307,58 @@ const ProformaDetail = () => {
               Export PDF
             </Button>
             {proforma.status === 'draft' && (
-              <Button>Mark as Sent</Button>
+              <Button onClick={() => handleStatusChange('sent')}>
+                Mark as Sent
+              </Button>
             )}
             {proforma.status === 'sent' && (
               <>
-                <Button variant="destructive">Reject</Button>
-                <Button>Approve</Button>
+                <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">
+                      <X className="mr-2 h-4 w-4" />
+                      Reject
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reject Proforma Invoice</DialogTitle>
+                      <DialogDescription>
+                        Please provide a reason for rejecting this proforma invoice.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="rejection-reason">Rejection Reason</Label>
+                        <Textarea
+                          id="rejection-reason"
+                          placeholder="Enter the reason for rejection..."
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setRejectionDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectionReason.trim()}>
+                        Confirm Rejection
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <Button onClick={() => handleStatusChange('approved')}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Approve
+                </Button>
               </>
+            )}
+            {proforma.status === 'approved' && !proforma.finalInvoiceId && (
+              <Button onClick={handleConvertToFinal}>
+                Convert to Final Invoice
+              </Button>
             )}
             {proforma.status === 'approved' && proforma.finalInvoiceId && (
               <Button asChild>
@@ -241,10 +376,13 @@ const ProformaDetail = () => {
             <CardDescription>Create a new proforma invoice</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-center py-8 text-muted-foreground">
-              This is a demonstration application. <br />
-              The full proforma creation form would be implemented here in a production environment.
-            </p>
+            <div className="flex justify-center py-8">
+              <Button asChild>
+                <Link to="/invoices/proforma/new">
+                  Create New Proforma
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -261,6 +399,18 @@ const ProformaDetail = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {isNewProforma && (
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('redirectToNewProforma').click();
+              });
+            `,
+          }}
+        />
       )}
     </div>
   );
