@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -25,37 +24,62 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 
+interface SupabaseUser {
+  id: string;
+  email: string;
+  user_metadata: {
+    name?: string;
+    role?: string;
+    active?: boolean;
+  };
+  created_at: string;
+}
+
 const UsersPage = () => {
   const { checkPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch users on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setIsLoading(true);
         
-        // In a real implementation, you would fetch users from Supabase
-        // For now, we'll use mock data
-        const mockUsers = [
-          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01' },
-          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02' },
-          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03' },
-          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04' },
-          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05' },
-        ];
+        const { data: authUsers, error } = await supabase.auth.admin.listUsers();
         
-        // Set users to state
-        setUsers(mockUsers);
+        if (error) {
+          throw error;
+        }
+        
+        const formattedUsers: User[] = authUsers.users.map((user: SupabaseUser) => ({
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unnamed User',
+          role: (user.user_metadata?.role as UserRole) || UserRole.VIEWER,
+          active: user.user_metadata?.active !== false,
+          createdAt: user.created_at,
+          updatedAt: user.created_at,
+        }));
+        
+        setUsers(formattedUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load users.',
+          description: 'Failed to load users. You might not have the required permissions.',
         });
+        
+        const mockUsers = [
+          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
+          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
+          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
+        ];
+        
+        setUsers(mockUsers);
       } finally {
         setIsLoading(false);
       }
@@ -64,7 +88,6 @@ const UsersPage = () => {
     fetchUsers();
   }, []);
   
-  // Filter users based on search query
   const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -74,7 +97,6 @@ const UsersPage = () => {
     );
   });
   
-  // Get role badge variant
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN:

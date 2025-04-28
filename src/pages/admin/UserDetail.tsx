@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Define the form schema with validation
 const userFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
@@ -56,7 +54,6 @@ const UserDetail = () => {
   const isNewUser = id === 'new';
   const [isLoading, setIsLoading] = useState(false);
   
-  // Set up the form with default values
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -68,14 +65,11 @@ const UserDetail = () => {
     },
   });
 
-  // Load user data if editing an existing user
   useEffect(() => {
     if (!isNewUser) {
       const fetchUser = async () => {
         try {
           setIsLoading(true);
-          // In a real app, you would fetch from Supabase
-          // For now using mock data
           const mockUser = {
             id: id,
             name: 'Sample User', 
@@ -107,43 +101,34 @@ const UserDetail = () => {
     }
   }, [id, form, isNewUser]);
 
-  // Handle form submission
   const onSubmit = async (values: UserFormValues) => {
     try {
       setIsLoading(true);
       
       if (isNewUser) {
-        // Create a new user via Supabase Auth
-        const { data, error } = await supabase.auth.admin.createUser({
-          email: values.email,
-          password: values.password || undefined,
-          email_confirm: true,
-          user_metadata: {
+        toast({
+          title: 'User creation limited',
+          description: `To create users with the admin API, you need to use the Supabase service role key. For now, users can sign up directly through the registration page.`,
+          variant: 'destructive'
+        });
+      } else {
+        const { error } = await supabase.auth.updateUser({
+          data: {
             name: values.name,
             role: values.role,
             active: values.active,
-          },
+          }
         });
 
         if (error) throw error;
-
-        toast({
-          title: 'User created',
-          description: `User ${values.name} has been created successfully.`,
-        });
-      } else {
-        // Update existing user
-        // Note: In a real implementation, you would use Supabase admin API
         
-        // For testing/demo purposes we're just showing a success message
         toast({
           title: 'User updated',
           description: `User ${values.name} has been updated successfully.`,
         });
+
+        navigate('/admin/users');
       }
-      
-      // Navigate back to users list
-      navigate('/admin/users');
     } catch (error) {
       console.error('Error saving user:', error);
       toast({
