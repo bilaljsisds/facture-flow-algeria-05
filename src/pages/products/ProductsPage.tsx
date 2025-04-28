@@ -20,22 +20,30 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
-import { mockDataService } from '@/services/mockDataService';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
-import { Package, Plus, Search } from 'lucide-react';
+import { Package2, Plus, Search } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProductsPage = () => {
   const { checkPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Fetch products
+  // Fetch products from Supabase
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products'],
-    queryFn: () => mockDataService.getProducts(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   // Filter products based on search query
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = products.filter((product: Product) => {
     const query = searchQuery.toLowerCase();
     return (
       product.name.toLowerCase().includes(query) ||
@@ -97,12 +105,19 @@ const ProductsPage = () => {
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <Package className="h-10 w-10 text-muted-foreground/50" />
+              <Package2 className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
                 {searchQuery
                   ? "No products found matching your search"
                   : "No products added yet"}
               </p>
+              {checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]) && (
+                <Button asChild variant="outline" className="mt-2">
+                  <Link to="/products/new">
+                    <Plus className="mr-2 h-4 w-4" /> Add Your First Product
+                  </Link>
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-hidden rounded-md border">
@@ -119,7 +134,7 @@ const ProductsPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product: Product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-mono">{product.code}</TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>

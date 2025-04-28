@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -47,9 +48,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useEffect, useState } from 'react'; // <-- make sure useEffect is imported
+import { useEffect, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 // Form validation schema
 const productSchema = z.object({
@@ -71,11 +73,23 @@ const ProductDetail = () => {
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const canDelete = checkPermission([UserRole.ADMIN]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const isCreating = id === 'new';
 
   // Get product
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => mockDataService.getProductById(id!),
+    queryFn: async () => {
+      if (isCreating) return null;
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
     enabled: !!id,
   });
 
@@ -89,7 +103,6 @@ const ProductDetail = () => {
       taxRate: 0,
       stockQuantity: 0,
     },
-    values: product,
     mode: 'onChange'
   });
 
@@ -100,17 +113,53 @@ const ProductDetail = () => {
     }
   }, [product, form]);
 
+  // Create product
+  const createMutation = useMutation({
+    mutationFn: async (data: ProductFormValues) => {
+      const { data: newProduct, error } = await supabase
+        .from('products')
+        .insert([data])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return newProduct;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Product Created',
+        description: 'Product has been successfully created'
+      });
+      navigate('/products');
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create product'
+      });
+      console.error('Error creating product:', error);
+    }
+  });
+
   // Update product
   const updateMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      return mockDataService.updateProduct(id!, data);
+      const { data: updatedProduct, error } = await supabase
+        .from('products')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return updatedProduct;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update product'
+        title: 'Success',
+        description: 'Product has been updated successfully'
       });
       navigate('/products');
     },
@@ -126,7 +175,15 @@ const ProductDetail = () => {
 
   // Delete product
   const deleteMutation = useMutation({
-    mutationFn: () => mockDataService.deleteProduct(id!),
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return true;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast({
@@ -156,7 +213,11 @@ const ProductDetail = () => {
       return;
     }
 
-    updateMutation.mutate(data);
+    if (isCreating) {
+      createMutation.mutate(data);
+    } else {
+      updateMutation.mutate(data);
+    }
   };
 
   const deleteHandler = () => {
@@ -172,7 +233,7 @@ const ProductDetail = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !isCreating) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -231,7 +292,7 @@ const ProductDetail = () => {
     );
   }
 
-  if (!canEdit && !canDelete) {
+  if (!canEdit && !canDelete && !isCreating) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -258,13 +319,13 @@ const ProductDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {product?.name}
+            {isCreating ? 'Create New Product' : product?.name}
           </h1>
         </div>
-        {canEdit && (
+        {!isCreating && canEdit && (
           <div className="flex gap-2">
             {canDelete && (
-              <AlertDialog>
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
                     <Trash className="mr-2 h-4 w-4" />
@@ -300,7 +361,7 @@ const ProductDetail = () => {
             <CardHeader>
               <CardTitle>Product Information</CardTitle>
               <CardDescription>
-                Edit product details and information
+                {isCreating ? 'Add new product details' : 'Edit product details and information'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -410,16 +471,16 @@ const ProductDetail = () => {
 
           {canEdit && (
             <div className="flex justify-end">
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? (
+              <Button type="submit" disabled={updateMutation.isPending || createMutation.isPending}>
+                {updateMutation.isPending || createMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
+                    {isCreating ? 'Creating...' : 'Updating...'}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Update Product
+                    {isCreating ? 'Create Product' : 'Update Product'}
                   </>
                 )}
               </Button>
