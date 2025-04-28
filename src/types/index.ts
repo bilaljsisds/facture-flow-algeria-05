@@ -1,4 +1,3 @@
-
 // Base types for our domain models
 
 export interface Client {
@@ -81,6 +80,24 @@ export interface DeliveryNote {
   status: 'pending' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
+}
+
+// User related types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export enum UserRole {
+  ADMIN = 'admin',
+  ACCOUNTANT = 'accountant',
+  SALESPERSON = 'salesperson',
+  VIEWER = 'viewer',
 }
 
 // Mock data generators

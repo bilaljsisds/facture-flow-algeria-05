@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Table,
@@ -20,25 +20,52 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
-import { Search, Plus, Users } from 'lucide-react';
-
-// Mock users for the admin page
-const mockUsers = [
-  { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true },
-  { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true },
-  { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true },
-  { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true },
-  { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false },
-];
+import { Search, Plus, Users, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
+import { User } from '@/types';
 
 const UsersPage = () => {
   const { checkPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Only admin can access this page, already checked in ProtectedRoute
+  // Fetch users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        
+        // In a real implementation, you would fetch users from Supabase
+        // For now, we'll use mock data
+        const mockUsers = [
+          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01' },
+          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02' },
+          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03' },
+          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04' },
+          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05' },
+        ];
+        
+        // Set users to state
+        setUsers(mockUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load users.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
   
   // Filter users based on search query
-  const filteredUsers = mockUsers.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const query = searchQuery.toLowerCase();
     return (
       user.name.toLowerCase().includes(query) ||
@@ -95,7 +122,14 @@ const UsersPage = () => {
             />
           </div>
 
-          {filteredUsers.length === 0 ? (
+          {isLoading ? (
+            <div className="flex h-40 flex-col items-center justify-center gap-2">
+              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground/50" />
+              <p className="text-center text-muted-foreground">
+                Loading users...
+              </p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center gap-2">
               <Users className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
