@@ -188,7 +188,7 @@ const FinalInvoiceDetail = () => {
                           </div>
                         </td>
                         <td className="px-4 py-2 text-right">{item.quantity}</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.unitPrice)}</td>
+                        <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
                         <td className="px-4 py-2 text-right">{item.taxrate}%</td>
                         <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
                       </tr>

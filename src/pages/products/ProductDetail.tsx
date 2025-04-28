@@ -58,7 +58,7 @@ const productSchema = z.object({
   code: z.string().min(1, 'Code is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  unitPrice: z.coerce.number().min(0, 'Price must be positive'),
+  unitprice: z.coerce.number().min(0, 'Price must be positive'),
   taxrate: z.coerce.number().min(0, 'Tax rate must be positive'),
   stockquantity: z.coerce.number().min(0, 'Stock must be positive'),
 });
@@ -99,7 +99,7 @@ const ProductDetail = () => {
       code: '',
       name: '',
       description: '',
-      unitPrice: 0,
+      unitprice: 0,
       taxrate: 0,
       stockquantity: 0,
     },
@@ -426,7 +426,7 @@ const ProductDetail = () => {
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField
                   control={form.control}
-                  name="unitPrice"
+                  name="unitprice"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Unit Price</FormLabel>

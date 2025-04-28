@@ -63,14 +63,14 @@ const proformaSchema = z.object({
       id: z.string(),
       productId: z.string().min(1, 'Product is required'),
       quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-      unitPrice: z.coerce.number().min(0, 'Price must be positive'),
+      unitprice: z.coerce.number().min(0, 'Price must be positive'),
       taxrate: z.coerce.number().min(0, 'Tax rate must be positive'),
       discount: z.coerce.number().min(0).max(100, 'Discount must be between 0 and 100'),
       product: z.object({
         name: z.string(),
         description: z.string(),
         code: z.string(),
-        unitPrice: z.number(),
+        unitprice: z.number(),
         taxrate: z.number(),
       }).optional()
     })
@@ -110,7 +110,7 @@ const NewProformaInvoice = () => {
           id: generateId(),
           productId: '',
           quantity: 1,
-          unitPrice: 0,
+          unitprice: 0,
           taxrate: 0,
           discount: 0
         }
@@ -141,11 +141,11 @@ const NewProformaInvoice = () => {
       if (!item.productId) return;
       
       const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
+      const unitprice = item.unitprice || 0;
       const taxrate = item.taxrate || 0;
       const discount = item.discount || 0;
       
-      const itemSubtotal = quantity * unitPrice * (1 - discount / 100);
+      const itemSubtotal = quantity * unitprice * (1 - discount / 100);
       const itemTax = itemSubtotal * (taxrate / 100);
       
       subtotal += itemSubtotal;
@@ -166,7 +166,7 @@ const NewProformaInvoice = () => {
         id: generateId(),
         productId: '',
         quantity: 1,
-        unitPrice: 0,
+        unitprice: 0,
         taxrate: 0,
         discount: 0
       }
@@ -188,7 +188,7 @@ const NewProformaInvoice = () => {
       items[index] = {
         ...items[index],
         productId: productId,
-        unitPrice: product.unitPrice,
+        unitprice: product.unitprice,
         taxrate: product.taxrate,
         product: product
       };
@@ -211,11 +211,11 @@ const NewProformaInvoice = () => {
       // Calculate item totals
       const items = data.items.map(item => {
         const quantity = item.quantity || 0;
-        const unitPrice = item.unitPrice || 0;
+        const unitprice = item.unitprice || 0;
         const taxrate = item.taxrate || 0;
         const discount = item.discount || 0;
         
-        const totalExcl = quantity * unitPrice * (1 - discount / 100);
+        const totalExcl = quantity * unitprice * (1 - discount / 100);
         const totalTax = totalExcl * (taxrate / 100);
         const total = totalExcl + totalTax;
         
@@ -224,7 +224,7 @@ const NewProformaInvoice = () => {
           productId: item.productId,
           product: products.find(p => p.id === item.productId),
           quantity,
-          unitPrice,
+          unitprice,
           taxrate,
           discount,
           totalExcl,
@@ -477,10 +477,10 @@ const NewProformaInvoice = () => {
                             type="number"
                             min="0"
                             step="0.01"
-                            value={item.unitPrice}
+                            value={item.unitprice}
                             onChange={(e) => {
                               const items = [...form.getValues('items')];
-                              items[index].unitPrice = parseFloat(e.target.value) || 0;
+                              items[index].unitprice = parseFloat(e.target.value) || 0;
                               form.setValue('items', items);
                             }}
                           />

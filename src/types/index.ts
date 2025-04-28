@@ -19,7 +19,7 @@ export interface Product {
   code: string;
   name: string;
   description: string;
-  unitPrice: number;
+  unitprice: number;
   taxrate: number; // TVA rate
   stockquantity: number;
   createdAt: string;
@@ -31,7 +31,7 @@ export interface InvoiceItem {
   productId: string;
   product?: Product;
   quantity: number;
-  unitPrice: number;
+  unitprice: number;
   taxrate: number;
   discount: number;
   totalExcl: number;

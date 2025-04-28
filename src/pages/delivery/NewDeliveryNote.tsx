@@ -67,7 +67,7 @@ const deliveryNoteSchema = z.object({
         name: z.string(),
         description: z.string(),
         code: z.string(),
-        unitPrice: z.number(),
+        unitprice: z.number(),
         taxrate: z.number(),
       }).optional()
     })
@@ -186,12 +186,12 @@ const NewDeliveryNote = () => {
             productId: item.productId,
             product,
             quantity: item.quantity,
-            unitPrice: product?.unitPrice || 0,
+            unitprice: product?.unitprice || 0,
             taxrate: product?.taxrate || 0,
             discount: 0,
-            totalExcl: (product?.unitPrice || 0) * item.quantity,
-            totalTax: (product?.unitPrice || 0) * item.quantity * (product?.taxrate || 0) / 100,
-            total: (product?.unitPrice || 0) * item.quantity * (1 + (product?.taxrate || 0) / 100)
+            totalExcl: (product?.unitprice || 0) * item.quantity,
+            totalTax: (product?.unitprice || 0) * item.quantity * (product?.taxrate || 0) / 100,
+            total: (product?.unitprice || 0) * item.quantity * (1 + (product?.taxrate || 0) / 100)
           };
         })
       };

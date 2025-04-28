@@ -141,7 +141,7 @@ const ProductsPage = () => {
                       <TableCell className="hidden max-w-xs truncate md:table-cell">
                         {product.description}
                       </TableCell>
-                      <TableCell>{formatCurrency(product.unitPrice)}</TableCell>
+                      <TableCell>{formatCurrency(product.unitprice)}</TableCell>
                       <TableCell>{product.taxrate}%</TableCell>
                       <TableCell className="hidden sm:table-cell">{product.stockquantity}</TableCell>
                       <TableCell className="text-right">
