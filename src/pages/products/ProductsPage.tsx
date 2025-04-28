@@ -143,7 +143,7 @@ const ProductsPage = () => {
                       </TableCell>
                       <TableCell>{formatCurrency(product.unitPrice)}</TableCell>
                       <TableCell>{product.taxRate}%</TableCell>
-                      <TableCell className="hidden sm:table-cell">{product.stockQuantity}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{product.stockquantity}</TableCell>
                       <TableCell className="text-right">
                         <Link
                           to={`/products/${product.id}`}

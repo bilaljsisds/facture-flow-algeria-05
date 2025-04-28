@@ -162,7 +162,7 @@ export const mockDataService = {
       description: product.description,
       unitPrice: product.unitprice,
       taxRate: product.taxrate,
-      stockQuantity: product.stockquantity,
+      stockquantity: product.stockquantity,
       createdAt: product.createdat || new Date().toISOString(),
       updatedAt: product.updatedat || new Date().toISOString()
     }));
@@ -187,7 +187,7 @@ export const mockDataService = {
       description: data.description,
       unitPrice: data.unitprice,
       taxRate: data.taxrate,
-      stockQuantity: data.stockquantity,
+      stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
@@ -202,7 +202,7 @@ export const mockDataService = {
         description: product.description,
         unitprice: product.unitPrice,
         taxrate: product.taxRate,
-        stockquantity: product.stockQuantity
+        stockquantity: product.stockquantity
       })
       .select()
       .single();
@@ -219,7 +219,7 @@ export const mockDataService = {
       description: data.description,
       unitPrice: data.unitprice,
       taxRate: data.taxrate,
-      stockQuantity: data.stockquantity,
+      stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
@@ -232,7 +232,7 @@ export const mockDataService = {
     if (product.description !== undefined) updateData.description = product.description;
     if (product.unitPrice !== undefined) updateData.unitprice = product.unitPrice;
     if (product.taxRate !== undefined) updateData.taxrate = product.taxRate;
-    if (product.stockQuantity !== undefined) updateData.stockquantity = product.stockQuantity;
+    if (product.stockquantity !== undefined) updateData.stockquantity = product.stockquantity;
     
     const { data, error } = await supabase
       .from('products')
@@ -253,7 +253,7 @@ export const mockDataService = {
       description: data.description,
       unitPrice: data.unitprice,
       taxRate: data.taxrate,
-      stockQuantity: data.stockquantity,
+      stockquantity: data.stockquantity,
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
@@ -315,7 +315,7 @@ export const mockDataService = {
               description: productData.description,
               unitPrice: productData.unitprice,
               taxRate: productData.taxrate,
-              stockQuantity: productData.stockquantity,
+              stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
             };
@@ -413,7 +413,7 @@ export const mockDataService = {
             description: productData.description,
             unitPrice: productData.unitprice,
             taxRate: productData.taxrate,
-            stockQuantity: productData.stockquantity,
+            stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
           };
@@ -678,7 +678,7 @@ export const mockDataService = {
               description: productData.description,
               unitPrice: productData.unitprice,
               taxRate: productData.taxrate,
-              stockQuantity: productData.stockquantity,
+              stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
             };
@@ -778,7 +778,7 @@ export const mockDataService = {
             description: productData.description,
             unitPrice: productData.unitprice,
             taxRate: productData.taxrate,
-            stockQuantity: productData.stockquantity,
+            stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
           };
@@ -877,7 +877,7 @@ export const mockDataService = {
               description: productData.description,
               unitPrice: productData.unitprice,
               taxRate: productData.taxrate,
-              stockQuantity: productData.stockquantity,
+              stockquantity: productData.stockquantity,
               createdAt: productData.createdat || new Date().toISOString(),
               updatedAt: productData.updatedat || new Date().toISOString()
             };
@@ -982,7 +982,7 @@ export const mockDataService = {
             description: productData.description,
             unitPrice: productData.unitprice,
             taxRate: productData.taxrate,
-            stockQuantity: productData.stockquantity,
+            stockquantity: productData.stockquantity,
             createdAt: productData.createdat || new Date().toISOString(),
             updatedAt: productData.updatedat || new Date().toISOString()
           };

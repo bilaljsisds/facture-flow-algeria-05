@@ -60,7 +60,7 @@ const productSchema = z.object({
   description: z.string().optional(),
   unitPrice: z.coerce.number().min(0, 'Price must be positive'),
   taxRate: z.coerce.number().min(0, 'Tax rate must be positive'),
-  stockQuantity: z.coerce.number().min(0, 'Stock must be positive'),
+  stockquantity: z.coerce.number().min(0, 'Stock must be positive'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -101,7 +101,7 @@ const ProductDetail = () => {
       description: '',
       unitPrice: 0,
       taxRate: 0,
-      stockQuantity: 0,
+      stockquantity: 0,
     },
     mode: 'onChange'
   });
@@ -454,7 +454,7 @@ const ProductDetail = () => {
 
                 <FormField
                   control={form.control}
-                  name="stockQuantity"
+                  name="stockquantity"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Stock Quantity</FormLabel>
