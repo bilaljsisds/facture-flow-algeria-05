@@ -30,8 +30,8 @@ export const mapDbProductToDomainProduct = (dbProduct: any) => {
     unitprice: dbProduct.unitprice,
     taxrate: dbProduct.taxrate,
     stockquantity: dbProduct.stockquantity,
-    createdAt: dbProduct.createdat,
-    updatedAt: dbProduct.updatedat,
+    createdAt: dbProduct.createdat || dbProduct.created_at,
+    updatedAt: dbProduct.updatedat || dbProduct.updated_at,
   };
 };
 

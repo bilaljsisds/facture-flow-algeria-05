@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -24,17 +25,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { User } from '@/types';
 
-interface SupabaseUser {
-  id: string;
-  email: string;
-  user_metadata: {
-    name?: string;
-    role?: string;
-    active?: boolean;
-  };
-  created_at: string;
-}
-
 const UsersPage = () => {
   const { checkPermission } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,32 +36,51 @@ const UsersPage = () => {
       try {
         setIsLoading(true);
         
-        const { data: authUsers, error } = await supabase.auth.admin.listUsers();
+        // Note: This will only work in edge functions or server-side code with the service_role key
+        // For frontend usage, it will fail with "not_admin" error
+        const { data, error } = await supabase.auth.getUser();
         
         if (error) {
           throw error;
         }
         
-        const formattedUsers: User[] = authUsers.users.map((user: SupabaseUser) => ({
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unnamed User',
-          role: (user.user_metadata?.role as UserRole) || UserRole.VIEWER,
-          active: user.user_metadata?.active !== false,
-          createdAt: user.created_at,
-          updatedAt: user.created_at,
-        }));
+        // For demonstration, since we can't call admin API from frontend
+        // and service role key should never be exposed in client code
+        // we'll use mock data until a proper backend API is implemented
         
-        setUsers(formattedUsers);
+        const mockUsers: User[] = [
+          { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
+          { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
+          { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
+          { id: '4', name: 'Viewer User', email: 'viewer@example.com', role: UserRole.VIEWER, active: true, createdAt: '2023-01-04', updatedAt: '2023-01-04' },
+          { id: '5', name: 'Inactive User', email: 'inactive@example.com', role: UserRole.VIEWER, active: false, createdAt: '2023-01-05', updatedAt: '2023-01-05' },
+          // Add current user if logged in
+          ...(data?.user ? [{
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Current User',
+            role: (data.user.user_metadata?.role as UserRole) || UserRole.VIEWER,
+            active: true,
+            createdAt: data.user.created_at,
+            updatedAt: data.user.created_at,
+          }] : [])
+        ];
+        
+        toast({
+          title: 'Note about User Management',
+          description: 'Showing mock data. To manage real users requires a secure backend API with service role key.',
+        });
+        
+        setUsers(mockUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to load users. You might not have the required permissions.',
+          description: 'Failed to load users. Admin API requires service role key from a secure backend.',
         });
         
-        const mockUsers = [
+        const mockUsers: User[] = [
           { id: '1', name: 'Admin User', email: 'admin@example.com', role: UserRole.ADMIN, active: true, createdAt: '2023-01-01', updatedAt: '2023-01-01' },
           { id: '2', name: 'Accountant User', email: 'accountant@example.com', role: UserRole.ACCOUNTANT, active: true, createdAt: '2023-01-02', updatedAt: '2023-01-02' },
           { id: '3', name: 'Sales User', email: 'sales@example.com', role: UserRole.SALESPERSON, active: true, createdAt: '2023-01-03', updatedAt: '2023-01-03' },
@@ -131,7 +140,12 @@ const UsersPage = () => {
       <Card>
         <CardHeader>
           <CardTitle>System Users</CardTitle>
-          <CardDescription>Manage access and permissions for users</CardDescription>
+          <CardDescription>
+            Manage access and permissions for users. 
+            <span className="block text-amber-600 mt-1">
+              Note: For security reasons, admin operations require a backend API with service role key.
+            </span>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-center gap-2">
