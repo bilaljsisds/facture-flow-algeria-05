@@ -13,28 +13,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Transaction functions
 export const beginTransaction = async () => {
-  try {
-    return await supabase.rpc('begin_transaction');
-  } catch (error) {
-    console.error('Error beginning transaction:', error);
-    return { error };
-  }
+  return await supabase.rpc('begin_transaction');
 };
 
 export const commitTransaction = async () => {
-  try {
-    return await supabase.rpc('commit_transaction');
-  } catch (error) {
-    console.error('Error committing transaction:', error);
-    return { error };
-  }
+  return await supabase.rpc('commit_transaction');
 };
 
 export const rollbackTransaction = async () => {
-  try {
-    return await supabase.rpc('rollback_transaction');
-  } catch (error) {
-    console.error('Error rolling back transaction:', error);
-    return { error };
-  }
+  return await supabase.rpc('rollback_transaction');
 };

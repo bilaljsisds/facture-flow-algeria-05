@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -16,18 +17,10 @@ import { toast } from '@/components/ui/use-toast';
 import { exportDeliveryNoteToPDF } from '@/utils/exportUtils';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 
-interface DeliveryNoteDetailProps {
-  isEditMode?: boolean;
-}
-
-const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({ isEditMode = false }) => {
+const DeliveryNoteDetail = () => {
   const { id } = useParams();
-  const location = useLocation();
   const isNewNote = id === 'new';
   const { checkPermission } = useAuth();
-  
-  const isEditing = isEditMode || location.pathname.includes('/edit/');
-  
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   
   const { 
@@ -103,13 +96,11 @@ const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({ isEditMode = fa
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewNote ? 'New Delivery Note' : 
-             isEditing ? `Edit Delivery Note: ${deliveryNote?.number}` :
-             `Delivery Note: ${deliveryNote?.number}`}
+            {isNewNote ? 'New Delivery Note' : `Delivery Note: ${deliveryNote?.number}`}
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNewNote && !isEditing && deliveryNote?.status && (
+          {!isNewNote && deliveryNote?.status && (
             <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
               {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
             </Badge>
@@ -119,90 +110,75 @@ const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({ isEditMode = fa
       
       {!isNewNote && deliveryNote ? (
         <>
-          {isEditing ? (
+          <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Edit Delivery Note</CardTitle>
-                <CardDescription>Make changes to this delivery note</CardDescription>
+                <CardTitle>Client Information</CardTitle>
+                <CardDescription>Client details for this delivery</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8 text-muted-foreground">
-                  This is a demonstration application. <br />
-                  The full delivery note edit form would be implemented here in a production environment.
-                </p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Name:</span>
+                    <span>{deliveryNote.client?.name}</span>
+                  </div>
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Address:</span>
+                    <span>{deliveryNote.client?.address}</span>
+                  </div>
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">City:</span>
+                    <span>{deliveryNote.client?.city}</span>
+                  </div>
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Phone:</span>
+                    <span>{deliveryNote.client?.phone}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Client Information</CardTitle>
-                  <CardDescription>Client details for this delivery</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Name:</span>
-                      <span>{deliveryNote.client?.name}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Address:</span>
-                      <span>{deliveryNote.client?.address}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">City:</span>
-                      <span>{deliveryNote.client?.city}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Phone:</span>
-                      <span>{deliveryNote.client?.phone}</span>
-                    </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Details</CardTitle>
+                <CardDescription>Information about this document</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Delivery Number:</span>
+                    <span>{deliveryNote.number}</span>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Delivery Details</CardTitle>
-                  <CardDescription>Information about this document</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Issue Date:</span>
+                    <span>{deliveryNote.issueDate}</span>
+                  </div>
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Delivery Date:</span>
+                    <span>{deliveryNote.deliveryDate || 'Not delivered yet'}</span>
+                  </div>
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Status:</span>
+                    <span>
+                      <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
+                        {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
+                      </Badge>
+                    </span>
+                  </div>
+                  {deliveryNote.finalInvoiceId && (
                     <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Delivery Number:</span>
-                      <span>{deliveryNote.number}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Issue Date:</span>
-                      <span>{deliveryNote.issueDate}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Delivery Date:</span>
-                      <span>{deliveryNote.deliveryDate || 'Not delivered yet'}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <span className="text-sm text-muted-foreground">Related Invoice:</span>
                       <span>
-                        <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
-                          {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
-                        </Badge>
+                        <Link to={`/invoices/final/${deliveryNote.finalInvoiceId}`} className="text-primary hover:underline">
+                          F-{deliveryNote.finalInvoiceId.padStart(4, '0')}
+                        </Link>
                       </span>
                     </div>
-                    {deliveryNote.finalInvoiceId && (
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Related Invoice:</span>
-                        <span>
-                          <Link to={`/invoices/final/${deliveryNote.finalInvoiceId}`} className="text-primary hover:underline">
-                            F-{deliveryNote.finalInvoiceId.padStart(4, '0')}
-                          </Link>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           
           <Card>
             <CardHeader>

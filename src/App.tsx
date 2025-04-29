@@ -51,25 +51,23 @@ const App = () => (
               
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/clients/:id" element={<ClientDetail />} />
-              <Route path="/clients/edit/:id" element={<ClientDetail />} />
               
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/products/edit/:id" element={<ProductDetail />} />
               
               <Route path="/invoices/proforma" element={<ProformaInvoicesPage />} />
-              <Route path="/invoices/proforma/new" element={<NewProformaInvoice />} />
               <Route path="/invoices/proforma/:id" element={<ProformaDetail />} />
-              <Route path="/invoices/proforma/edit/:id" element={<ProformaDetail isEditMode={true} />} />
+              <Route path="/invoices/proforma/new" element={<NewProformaInvoice />} />
+              <Route path="/invoices/proforma/edit/:id" element={<ProformaDetail />} />
               
               <Route path="/invoices/final" element={<FinalInvoicesPage />} />
               <Route path="/invoices/final/:id" element={<FinalInvoiceDetail />} />
-              <Route path="/invoices/final/edit/:id" element={<FinalInvoiceDetail isEditMode={true} />} />
+              <Route path="/invoices/final/edit/:id" element={<FinalInvoiceDetail />} />
               
               <Route path="/delivery-notes" element={<DeliveryNotesPage />} />
-              <Route path="/delivery-notes/new" element={<NewDeliveryNote />} />
               <Route path="/delivery-notes/:id" element={<DeliveryNoteDetail />} />
-              <Route path="/delivery-notes/edit/:id" element={<DeliveryNoteDetail isEditMode={true} />} />
+              <Route path="/delivery-notes/new" element={<NewDeliveryNote />} />
+              <Route path="/delivery-notes/edit/:id" element={<DeliveryNoteDetail />} />
               
               <Route path="/reports/etat104" element={<Etat104Page />} />
               
