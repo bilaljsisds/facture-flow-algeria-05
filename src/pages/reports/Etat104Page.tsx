@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { mockDataService } from '@/services/mockDataService';
 import { FinalInvoice, Client } from '@/types';
-import { FileSpreadsheet, Printer, Download } from 'lucide-react';
+import { FileSpreadsheet, printer, Download } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportEtat104ToPDF, exportEtat104ToExcel } from '@/utils/exportUtils';
 
@@ -163,7 +163,7 @@ const Etat104Page = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportToPDF}>
-            <Printer className="mr-2 h-4 w-4" />
+            <printer className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
           <Button variant="outline" onClick={exportToExcel}>

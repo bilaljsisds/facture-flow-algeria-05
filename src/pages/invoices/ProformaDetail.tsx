@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -46,8 +47,6 @@ import {
   Printer,
   Edit,
   Save,
-  Trash2,
-  Undo,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -65,24 +64,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@/components/ui/radio-group';
 
 const proformaFormSchema = z.object({
   notes: z.string().optional(),
   issueDate: z.string(),
   dueDate: z.string(),
-  payment_type: z.enum(['cheque', 'cash']),
-  status: z.string()
 });
 
 const ProformaDetail = () => {
@@ -93,7 +79,6 @@ const ProformaDetail = () => {
   const canApprove = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const canConvert = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
-  const canDelete = checkPermission([UserRole.ADMIN]);
   const isEditMode = window.location.pathname.includes('/edit/');
 
   const { data: proforma, isLoading } = useQuery({
@@ -107,16 +92,12 @@ const ProformaDetail = () => {
     defaultValues: {
       notes: proforma?.notes || '',
       issueDate: proforma?.issueDate || '',
-      dueDate: proforma?.dueDate || '',
-      payment_type: (proforma?.payment_type as 'cheque' | 'cash') || 'cheque',
-      status: proforma?.status || 'draft'
+      dueDate: proforma?.dueDate || ''
     },
     values: {
       notes: proforma?.notes || '',
       issueDate: proforma?.issueDate || '',
-      dueDate: proforma?.dueDate || '',
-      payment_type: (proforma?.payment_type as 'cheque' | 'cash') || 'cheque',
-      status: proforma?.status || 'draft'
+      dueDate: proforma?.dueDate || ''
     }
   });
 
@@ -185,70 +166,6 @@ const ProformaDetail = () => {
     }
   });
 
-  const deleteProformaMutation = useMutation({
-    mutationFn: () => {
-      return mockDataService.deleteProformaInvoice(id!);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proformaInvoices'] });
-      toast({
-        title: 'Proforma Deleted',
-        description: 'Proforma invoice has been deleted successfully'
-      });
-      navigate('/invoices/proforma');
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Delete Failed',
-        description: 'Failed to delete proforma invoice. Please try again.'
-      });
-      console.error('Error deleting proforma:', error);
-    }
-  });
-
-  const undoApprovedMutation = useMutation({
-    mutationFn: () => {
-      return mockDataService.undoApprovedProforma(id!);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proformaInvoice', id] });
-      toast({
-        title: 'Status Updated',
-        description: 'Proforma invoice status changed back to sent'
-      });
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update status. Please try again.'
-      });
-      console.error('Error updating proforma status:', error);
-    }
-  });
-
-  const undoConvertMutation = useMutation({
-    mutationFn: () => {
-      return mockDataService.undoConvertToFinal(id!);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proformaInvoice', id] });
-      toast({
-        title: 'Conversion Undone',
-        description: 'Final invoice has been removed'
-      });
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to undo conversion. Please try again.'
-      });
-      console.error('Error undoing conversion:', error);
-    }
-  });
-
   const handleUpdateStatus = (status: 'draft' | 'sent' | 'approved' | 'rejected') => {
     if (!id) return;
     statusUpdateMutation.mutate(status);
@@ -278,21 +195,6 @@ const ProformaDetail = () => {
         description: 'Failed to generate PDF. Please try again.'
       });
     }
-  };
-
-  const handleUndoApproved = () => {
-    if (!id || proforma?.status !== 'approved' || proforma?.finalInvoiceId) return;
-    undoApprovedMutation.mutate();
-  };
-
-  const handleUndoConvert = () => {
-    if (!id || !proforma?.finalInvoiceId) return;
-    undoConvertMutation.mutate();
-  };
-
-  const handleDelete = () => {
-    if (!id) return;
-    deleteProformaMutation.mutate();
   };
 
   const onSubmit = (data) => {
@@ -442,68 +344,21 @@ const ProformaDetail = () => {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="sent">Sent</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="payment_type"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Payment Method</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="cheque" />
-                            </FormControl>
-                            <FormLabel className="font-normal flex items-center">
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Cheque
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="cash" />
-                            </FormControl>
-                            <FormLabel className="font-normal flex items-center">
-                              <Banknote className="h-4 w-4 mr-2" />
-                              Cash
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div>
+                  <strong className="font-semibold">Status:</strong>{" "}
+                  <Badge
+                    className={`${statusColor[proforma.status]} text-white px-2 py-0.5 text-xs font-medium`}
+                  >
+                    {proforma.status}
+                  </Badge>
+                </div>
+                <div>
+                  <strong className="font-semibold">Payment Method:</strong>{" "}
+                  <span className="flex items-center">
+                    {getPaymentTypeIcon(proforma.payment_type || 'cheque')}
+                    {proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
@@ -825,96 +680,19 @@ const ProformaDetail = () => {
                 </AlertDialog>
               )}
 
-              {proforma.status === 'approved' && !proforma.finalInvoiceId && canApprove && (
-                <Button
-                  variant="outline"
-                  onClick={handleUndoApproved}
-                  disabled={undoApprovedMutation.isPending}
-                >
-                  <Undo className="mr-2 h-4 w-4" />
-                  Undo Approval
-                </Button>
-              )}
-
               {proforma.finalInvoiceId && (
-                <>
-                  <Button asChild variant="default">
-                    <Link to={`/invoices/final/${proforma.finalInvoiceId}`}>
-                      <File className="mr-2 h-4 w-4" />
-                      View Final Invoice
-                    </Link>
-                  </Button>
-                  
-                  {canApprove && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline">
-                          <Undo className="mr-2 h-4 w-4" />
-                          Undo Convert to Final
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Undo Conversion to Final Invoice</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will delete the final invoice created from this proforma.
-                            Are you sure you want to proceed?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={handleUndoConvert}
-                            disabled={undoConvertMutation.isPending}
-                          >
-                            {undoConvertMutation.isPending ? (
-                              <>
-                                <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></span>
-                                Reverting...
-                              </>
-                            ) : (
-                              "Undo Conversion"
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </>
+                <Button asChild variant="default">
+                  <Link to={`/invoices/final/${proforma.finalInvoiceId}`}>
+                    <File className="mr-2 h-4 w-4" />
+                    View Final Invoice
+                  </Link>
+                </Button>
               )}
 
               <Button variant="outline" onClick={handleExportPDF}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print / Download
               </Button>
-              
-              {canDelete && ['draft', 'sent', 'rejected'].includes(proforma.status) && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Proforma
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Proforma Invoice</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the proforma invoice.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
             </CardContent>
           </Card>
         </>
