@@ -488,22 +488,22 @@ export const exportEtat104ToExcel = (
 };
 
 // Helper function for status colors
-function getStatusColor(status: string): number[] {
+function getStatusColor(status: string): string {
   switch (status) {
     case 'paid':
     case 'approved':
     case 'delivered':
-      return [39, 174, 96]; // Green
+      return "#27ae60"; // Green (Hexadecimal)
     case 'unpaid':
     case 'sent':
     case 'pending':
-      return [41, 128, 185]; // Blue
+      return "#2980b9"; // Blue (Hexadecimal)
     case 'cancelled':
     case 'rejected':
-      return [192, 57, 43]; // Red
+      return "#c0392b"; // Red (Hexadecimal)
     case 'credited':
     case 'draft':
     default:
-      return [149, 165, 166]; // Gray
+      return "#95a5a6"; // Gray (Hexadecimal)
   }
 }
