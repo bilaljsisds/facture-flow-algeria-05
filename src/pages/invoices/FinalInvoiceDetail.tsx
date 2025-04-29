@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -16,10 +15,16 @@ import { ArrowLeft, Truck, Printer, Edit, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
 
-const FinalInvoiceDetail = () => {
+interface FinalInvoiceDetailProps {
+  isEditMode?: boolean;
+}
+
+const FinalInvoiceDetail: React.FC<FinalInvoiceDetailProps> = ({ isEditMode = false }) => {
   const { id } = useParams();
+  const location = useLocation();
   const queryClient = useQueryClient();
-  const isNewInvoice = id === 'new';
+  
+  const isEditing = isEditMode || location.pathname.includes('/edit/');
   
   const { 
     data: invoices = [],
@@ -27,10 +32,10 @@ const FinalInvoiceDetail = () => {
   } = useQuery({
     queryKey: ['finalInvoices'],
     queryFn: () => mockDataService.getFinalInvoices(),
-    enabled: !isNewInvoice,
+    enabled: !!id,
   });
   
-  const invoice = isNewInvoice ? null : invoices.find(i => i.id === id);
+  const invoice = id ? invoices.find(i => i.id === id) : null;
   
   const markAsPaidMutation = useMutation({
     mutationFn: () => mockDataService.markFinalInvoiceAsPaid(id || ''),
@@ -102,7 +107,7 @@ const FinalInvoiceDetail = () => {
     markAsPaidMutation.mutate();
   };
 
-  if (!isNewInvoice && isLoading) {
+  if (!id && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -120,11 +125,11 @@ const FinalInvoiceDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewInvoice ? 'New Final Invoice' : `Invoice: ${invoice?.number}`}
+            {isEditing ? `Edit Invoice: ${invoice?.number}` : `Invoice: ${invoice?.number}`}
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNewInvoice && invoice?.status && (
+          {invoice?.status && (
             <Badge variant={getStatusBadgeVariant(invoice.status)}>
               {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
             </Badge>
@@ -132,137 +137,152 @@ const FinalInvoiceDetail = () => {
         </div>
       </div>
       
-      {!isNewInvoice && invoice ? (
+      {invoice ? (
         <>
-          <div className="grid gap-6 md:grid-cols-2">
+          {isEditing ? (
             <Card>
               <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-                <CardDescription>Client details for this invoice</CardDescription>
+                <CardTitle>Edit Invoice</CardTitle>
+                <CardDescription>Make changes to this invoice</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Name:</span>
-                    <span>{invoice.client?.name}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Tax ID:</span>
-                    <span>{invoice.client?.taxId}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Address:</span>
-                    <span>{invoice.client?.address}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">City:</span>
-                    <span>{invoice.client?.city}</span>
-                  </div>
-                </div>
+                <p className="text-center py-8 text-muted-foreground">
+                  This is a demonstration application. <br />
+                  The full invoice edit form would be implemented here in a production environment.
+                </p>
               </CardContent>
             </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Information</CardTitle>
+                  <CardDescription>Client details for this invoice</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Name:</span>
+                      <span>{invoice.client?.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Tax ID:</span>
+                      <span>{invoice.client?.taxId}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Address:</span>
+                      <span>{invoice.client?.address}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">City:</span>
+                      <span>{invoice.client?.city}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invoice Details</CardTitle>
+                  <CardDescription>Information about this document</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Invoice Number:</span>
+                      <span>{invoice.number}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Issue Date:</span>
+                      <span>{invoice.issueDate}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Due Date:</span>
+                      <span>{invoice.dueDate}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <span>
+                        <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </Badge>
+                      </span>
+                    </div>
+                    {invoice.proformaId && (
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">From Proforma:</span>
+                        <span>
+                          <Link to={`/invoices/proforma/${invoice.proformaId}`} className="text-primary hover:underline">
+                            P-{invoice.proformaId.padStart(4, '0')}
+                          </Link>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             
             <Card>
               <CardHeader>
-                <CardTitle>Invoice Details</CardTitle>
-                <CardDescription>Information about this document</CardDescription>
+                <CardTitle>Items</CardTitle>
+                <CardDescription>Products and services in this invoice</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Invoice Number:</span>
-                    <span>{invoice.number}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Issue Date:</span>
-                    <span>{invoice.issueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Due Date:</span>
-                    <span>{invoice.dueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <span>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                      </Badge>
-                    </span>
-                  </div>
-                  {invoice.proformaId && (
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">From Proforma:</span>
-                      <span>
-                        <Link to={`/invoices/proforma/${invoice.proformaId}`} className="text-primary hover:underline">
-                          P-{invoice.proformaId.padStart(4, '0')}
-                        </Link>
-                      </span>
-                    </div>
-                  )}
+                <div className="overflow-hidden rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-2 text-left">Product</th>
+                        <th className="px-4 py-2 text-right">Qty</th>
+                        <th className="px-4 py-2 text-right">Unit Price</th>
+                        <th className="px-4 py-2 text-right">Tax</th>
+                        <th className="px-4 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.items.map((item) => (
+                        <tr key={item.id} className="border-b">
+                          <td className="px-4 py-2">
+                            <div>
+                              <div className="font-medium">{item.product?.name}</div>
+                              <div className="text-xs text-muted-foreground">{item.product?.description}</div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right">{item.quantity}</td>
+                          <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
+                          <td className="px-4 py-2 text-right">{item.taxrate}%</td>
+                          <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                
+                <div className="mt-4 space-y-2 border-t pt-4 text-right">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Subtotal:</span>
+                    <span>{formatCurrency(invoice.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Tax:</span>
+                    <span>{formatCurrency(invoice.taxTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(invoice.total)}</span>
+                  </div>
+                </div>
+                
+                {invoice.notes && (
+                  <div className="mt-6 rounded-md border p-4">
+                    <h4 className="mb-2 font-medium">Notes</h4>
+                    <p className="text-sm">{invoice.notes}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Items</CardTitle>
-              <CardDescription>Products and services in this invoice</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-hidden rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-2 text-left">Product</th>
-                      <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Unit Price</th>
-                      <th className="px-4 py-2 text-right">Tax</th>
-                      <th className="px-4 py-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.items.map((item) => (
-                      <tr key={item.id} className="border-b">
-                        <td className="px-4 py-2">
-                          <div>
-                            <div className="font-medium">{item.product?.name}</div>
-                            <div className="text-xs text-muted-foreground">{item.product?.description}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-right">{item.quantity}</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
-                        <td className="px-4 py-2 text-right">{item.taxrate}%</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-4 space-y-2 border-t pt-4 text-right">
-                <div className="flex justify-between">
-                  <span className="font-medium">Subtotal:</span>
-                  <span>{formatCurrency(invoice.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Tax:</span>
-                  <span>{formatCurrency(invoice.taxTotal)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(invoice.total)}</span>
-                </div>
-              </div>
-              
-              {invoice.notes && (
-                <div className="mt-6 rounded-md border p-4">
-                  <h4 className="mb-2 font-medium">Notes</h4>
-                  <p className="text-sm">{invoice.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          )}
           
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleExportPDF}>
@@ -270,14 +290,16 @@ const FinalInvoiceDetail = () => {
               Export PDF
             </Button>
             
-            <Button asChild variant="outline">
-              <Link to={`/invoices/final/edit/${invoice.id}`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Invoice
-              </Link>
-            </Button>
+            {!isEditing && (
+              <Button asChild variant="outline">
+                <Link to={`/invoices/final/edit/${invoice.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Invoice
+                </Link>
+              </Button>
+            )}
             
-            {['unpaid', 'paid'].includes(invoice.status) && (
+            {['unpaid', 'paid'].includes(invoice.status) && !isEditing && (
               <Button asChild>
                 <Link to={`/delivery-notes/new?invoiceId=${invoice.id}`}>
                   <Truck className="mr-2 h-4 w-4" />
@@ -286,7 +308,7 @@ const FinalInvoiceDetail = () => {
               </Button>
             )}
             
-            {invoice.status === 'unpaid' && (
+            {invoice.status === 'unpaid' && !isEditing && (
               <Button onClick={handleMarkAsPaid}>
                 <Check className="mr-2 h-4 w-4" />
                 Mark as Paid
@@ -294,19 +316,6 @@ const FinalInvoiceDetail = () => {
             )}
           </div>
         </>
-      ) : isNewInvoice ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>New Final Invoice</CardTitle>
-            <CardDescription>Create a new final invoice</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center py-8 text-muted-foreground">
-              This is a demonstration application. <br />
-              The full invoice creation form would be implemented here in a production environment.
-            </p>
-          </CardContent>
-        </Card>
       ) : (
         <Card>
           <CardContent className="pt-6">

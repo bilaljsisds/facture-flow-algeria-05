@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -17,10 +16,18 @@ import { toast } from '@/components/ui/use-toast';
 import { exportDeliveryNoteToPDF } from '@/utils/exportUtils';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 
-const DeliveryNoteDetail = () => {
+interface DeliveryNoteDetailProps {
+  isEditMode?: boolean;
+}
+
+const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({ isEditMode = false }) => {
   const { id } = useParams();
+  const location = useLocation();
   const isNewNote = id === 'new';
   const { checkPermission } = useAuth();
+  
+  const isEditing = isEditMode || location.pathname.includes('/edit/');
+  
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   
   const { 
@@ -96,11 +103,13 @@ const DeliveryNoteDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewNote ? 'New Delivery Note' : `Delivery Note: ${deliveryNote?.number}`}
+            {isNewNote ? 'New Delivery Note' : 
+             isEditing ? `Edit Delivery Note: ${deliveryNote?.number}` :
+             `Delivery Note: ${deliveryNote?.number}`}
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNewNote && deliveryNote?.status && (
+          {!isNewNote && !isEditing && deliveryNote?.status && (
             <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
               {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
             </Badge>
@@ -110,75 +119,90 @@ const DeliveryNoteDetail = () => {
       
       {!isNewNote && deliveryNote ? (
         <>
-          <div className="grid gap-6 md:grid-cols-2">
+          {isEditing ? (
             <Card>
               <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-                <CardDescription>Client details for this delivery</CardDescription>
+                <CardTitle>Edit Delivery Note</CardTitle>
+                <CardDescription>Make changes to this delivery note</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Name:</span>
-                    <span>{deliveryNote.client?.name}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Address:</span>
-                    <span>{deliveryNote.client?.address}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">City:</span>
-                    <span>{deliveryNote.client?.city}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Phone:</span>
-                    <span>{deliveryNote.client?.phone}</span>
-                  </div>
-                </div>
+                <p className="text-center py-8 text-muted-foreground">
+                  This is a demonstration application. <br />
+                  The full delivery note edit form would be implemented here in a production environment.
+                </p>
               </CardContent>
             </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Delivery Details</CardTitle>
-                <CardDescription>Information about this document</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Delivery Number:</span>
-                    <span>{deliveryNote.number}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Issue Date:</span>
-                    <span>{deliveryNote.issueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Delivery Date:</span>
-                    <span>{deliveryNote.deliveryDate || 'Not delivered yet'}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <span>
-                      <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
-                        {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
-                      </Badge>
-                    </span>
-                  </div>
-                  {deliveryNote.finalInvoiceId && (
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Information</CardTitle>
+                  <CardDescription>Client details for this delivery</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
                     <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Related Invoice:</span>
+                      <span className="text-sm text-muted-foreground">Name:</span>
+                      <span>{deliveryNote.client?.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Address:</span>
+                      <span>{deliveryNote.client?.address}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">City:</span>
+                      <span>{deliveryNote.client?.city}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Phone:</span>
+                      <span>{deliveryNote.client?.phone}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Delivery Details</CardTitle>
+                  <CardDescription>Information about this document</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Delivery Number:</span>
+                      <span>{deliveryNote.number}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Issue Date:</span>
+                      <span>{deliveryNote.issueDate}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Delivery Date:</span>
+                      <span>{deliveryNote.deliveryDate || 'Not delivered yet'}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Status:</span>
                       <span>
-                        <Link to={`/invoices/final/${deliveryNote.finalInvoiceId}`} className="text-primary hover:underline">
-                          F-{deliveryNote.finalInvoiceId.padStart(4, '0')}
-                        </Link>
+                        <Badge variant={getStatusBadgeVariant(deliveryNote.status)}>
+                          {deliveryNote.status.charAt(0).toUpperCase() + deliveryNote.status.slice(1)}
+                        </Badge>
                       </span>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    {deliveryNote.finalInvoiceId && (
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Related Invoice:</span>
+                        <span>
+                          <Link to={`/invoices/final/${deliveryNote.finalInvoiceId}`} className="text-primary hover:underline">
+                            F-{deliveryNote.finalInvoiceId.padStart(4, '0')}
+                          </Link>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
           
           <Card>
             <CardHeader>
