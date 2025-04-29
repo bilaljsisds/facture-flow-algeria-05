@@ -1074,24 +1074,27 @@ class MockDataService {
   markDeliveryNoteAsDelivered = async (id: string) => {
     // In a real app, this would call the API to update the delivery note status
     const notes = this.getDeliveryNotes();
-    const index = notes.findIndex(note => note.id === id);
+
     if (!Array.isArray(notes)) {
       throw new Error("Invalid delivery notes data: not an array");
     }
+
+    const index = notes.findIndex(note => note.id === id);
+
     if (index === -1) {
       throw new Error("Delivery note not found");
     }
-    
+
     const updatedNote = {
       ...notes[index],
       status: 'delivered',
       deliveryDate: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString()
     };
-    
+
     notes[index] = updatedNote;
     localStorage.setItem('deliveryNotes', JSON.stringify(notes));
-    
+
     return updatedNote;
   };
 
