@@ -1075,7 +1075,9 @@ class MockDataService {
     // In a real app, this would call the API to update the delivery note status
     const notes = this.getDeliveryNotes();
     const index = notes.findIndex(note => note.id === id);
-    
+    if (!Array.isArray(notes)) {
+      throw new Error("Invalid delivery notes data: not an array");
+    }
     if (index === -1) {
       throw new Error("Delivery note not found");
     }
