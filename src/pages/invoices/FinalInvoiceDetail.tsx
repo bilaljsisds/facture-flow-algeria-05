@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, Truck, FilePdf } from 'lucide-react';
+import { ArrowLeft, Truck, printer } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
 
@@ -240,7 +240,7 @@ const FinalInvoiceDetail = () => {
           
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleExportPDF}>
-              <FilePdf className="mr-2 h-4 w-4" />
+              <printer className="mr-2 h-4 w-4" />
               Export PDF
             </Button>
             
@@ -275,7 +275,7 @@ const FinalInvoiceDetail = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <FilePdf className="h-10 w-10 text-muted-foreground/50" />
+              <printer className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
                 Invoice not found
               </p>

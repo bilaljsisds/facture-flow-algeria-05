@@ -43,7 +43,7 @@ import {
   ThumbsUp,
   CreditCard,
   Banknote,
-  FilePdf,
+  printer,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -461,7 +461,7 @@ const ProformaDetail = () => {
           )}
 
           <Button variant="outline" onClick={handleExportPDF}>
-            <FilePdf className="mr-2 h-4 w-4" />
+            <printer className="mr-2 h-4 w-4" />
             Print / Download
           </Button>
         </CardContent>
