@@ -33,7 +33,9 @@ import {
   ArrowLeft, 
   Plus, 
   Save, 
-  X 
+  X,
+  Cheque,
+  Cash 
 } from 'lucide-react';
 import { 
   Table,
@@ -50,6 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getCurrentDate, getFutureDate, generateId } from '@/types';
 
 // Form validation schema
@@ -58,6 +61,7 @@ const proformaSchema = z.object({
   issueDate: z.string().min(1, 'Issue date is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   notes: z.string().optional(),
+  paymentType: z.enum(['cheque', 'cash']),
   items: z.array(
     z.object({
       id: z.string(),
@@ -84,7 +88,12 @@ const NewProformaInvoice = () => {
   const queryClient = useQueryClient();
   const { checkPermission } = useAuth();
   const canCreate = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.SALESPERSON]);
-  const [totals, setTotals] = useState({ subtotal: 0, taxTotal: 0, total: 0 });
+  const [totals, setTotals] = useState({ 
+    subtotal: 0, 
+    taxTotal: 0, 
+    stampTax: 0,
+    total: 0 
+  });
   
   // Get all clients
   const { data: clients = [] } = useQuery({
@@ -105,6 +114,7 @@ const NewProformaInvoice = () => {
       issueDate: getCurrentDate(),
       dueDate: getFutureDate(30), // 30 days from now
       notes: '',
+      paymentType: 'cheque',
       items: [
         {
           id: generateId(),
@@ -118,10 +128,25 @@ const NewProformaInvoice = () => {
     }
   });
 
-  // Calculate totals whenever items change
+  // Calculate stamp tax based on payment type and subtotal
+  const calculateStampTax = (paymentType: string, subtotal: number) => {
+    if (paymentType !== "cash") return 0;
+
+    if (subtotal > 100000) {
+      return subtotal * 0.02;
+    } else if (subtotal > 30000) {
+      return subtotal * 0.015;
+    } else if (subtotal > 300) {
+      return subtotal * 0.01;
+    } else {
+      return 0;
+    }
+  };
+
+  // Calculate totals whenever items change or payment type changes
   React.useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name?.startsWith('items') || name === 'items') {
+      if (name?.startsWith('items') || name === 'items' || name === 'paymentType') {
         calculateTotals();
       }
     });
@@ -132,10 +157,10 @@ const NewProformaInvoice = () => {
   // Calculate invoice totals
   const calculateTotals = () => {
     const items = form.getValues('items') || [];
+    const paymentType = form.getValues('paymentType');
     
     let subtotal = 0;
     let taxTotal = 0;
-    let total = 0;
     
     items.forEach(item => {
       if (!item.productId) return;
@@ -152,9 +177,10 @@ const NewProformaInvoice = () => {
       taxTotal += itemTax;
     });
     
-    total = subtotal + taxTotal;
+    const stampTax = calculateStampTax(paymentType, subtotal);
+    const total = subtotal + taxTotal + stampTax;
     
-    setTotals({ subtotal, taxTotal, total });
+    setTotals({ subtotal, taxTotal, stampTax, total });
   };
 
   // Add item to the form
@@ -236,7 +262,8 @@ const NewProformaInvoice = () => {
       // Calculate invoice totals
       const subtotal = items.reduce((sum, item) => sum + item.totalExcl, 0);
       const taxTotal = items.reduce((sum, item) => sum + item.totalTax, 0);
-      const total = subtotal + taxTotal;
+      const stampTax = calculateStampTax(data.paymentType, subtotal);
+      const total = subtotal + taxTotal + stampTax;
       
       // Format proforma for API
       const proforma = {
@@ -246,6 +273,8 @@ const NewProformaInvoice = () => {
         dueDate: data.dueDate,
         notes: data.notes || '',
         status: 'draft',
+        payment_type: data.paymentType,
+        stamp_tax: stampTax,
         items,
         subtotal,
         taxTotal,
@@ -394,6 +423,43 @@ const NewProformaInvoice = () => {
 
               <FormField
                 control={form.control}
+                name="paymentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="cheque" />
+                          </FormControl>
+                          <FormLabel className="flex items-center">
+                            <Cheque className="mr-2 h-4 w-4" />
+                            Cheque
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="cash" />
+                          </FormControl>
+                          <FormLabel className="flex items-center">
+                            <Cash className="mr-2 h-4 w-4" />
+                            Cash
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
@@ -537,6 +603,12 @@ const NewProformaInvoice = () => {
                   <span className="font-medium">Tax:</span>
                   <span>{formatCurrency(totals.taxTotal)}</span>
                 </div>
+                {form.getValues('paymentType') === 'cash' && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Stamp Tax:</span>
+                    <span>{formatCurrency(totals.stampTax)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
                   <span>{formatCurrency(totals.total)}</span>

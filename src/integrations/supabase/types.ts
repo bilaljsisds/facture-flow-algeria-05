@@ -82,37 +82,46 @@ export type Database = {
         Row: {
           clientid: string
           createdat: string | null
+          delivery_company: string | null
           deliverydate: string | null
+          driver_name: string | null
           finalinvoiceid: string | null
           id: string
           issuedate: string
           notes: string | null
           number: string
           status: string
+          truck_id: string | null
           updatedat: string | null
         }
         Insert: {
           clientid: string
           createdat?: string | null
+          delivery_company?: string | null
           deliverydate?: string | null
+          driver_name?: string | null
           finalinvoiceid?: string | null
           id?: string
           issuedate: string
           notes?: string | null
           number: string
           status: string
+          truck_id?: string | null
           updatedat?: string | null
         }
         Update: {
           clientid?: string
           createdat?: string | null
+          delivery_company?: string | null
           deliverydate?: string | null
+          driver_name?: string | null
           finalinvoiceid?: string | null
           id?: string
           issuedate?: string
           notes?: string | null
           number?: string
           status?: string
+          truck_id?: string | null
           updatedat?: string | null
         }
         Relationships: [
@@ -351,6 +360,8 @@ export type Database = {
           issuedate: string
           notes: string | null
           number: string
+          payment_type: string | null
+          stamp_tax: number | null
           status: string
           subtotal: number
           taxtotal: number
@@ -366,6 +377,8 @@ export type Database = {
           issuedate: string
           notes?: string | null
           number: string
+          payment_type?: string | null
+          stamp_tax?: number | null
           status: string
           subtotal: number
           taxtotal: number
@@ -381,6 +394,8 @@ export type Database = {
           issuedate?: string
           notes?: string | null
           number?: string
+          payment_type?: string | null
+          stamp_tax?: number | null
           status?: string
           subtotal?: number
           taxtotal?: number

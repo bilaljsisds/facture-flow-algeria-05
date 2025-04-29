@@ -33,7 +33,9 @@ import {
   ArrowLeft, 
   Plus, 
   Save, 
-  X 
+  X,
+  Truck,
+  Driver 
 } from 'lucide-react';
 import { 
   Table,
@@ -58,6 +60,9 @@ const deliveryNoteSchema = z.object({
   clientId: z.string().min(1, 'Client is required'),
   issueDate: z.string().min(1, 'Issue date is required'),
   notes: z.string().optional(),
+  driverName: z.string().optional(),
+  truckId: z.string().optional(),
+  deliveryCompany: z.string().optional(),
   items: z.array(
     z.object({
       id: z.string(),
@@ -112,6 +117,9 @@ const NewDeliveryNote = () => {
       clientId: '',
       issueDate: getCurrentDate(),
       notes: '',
+      driverName: '',
+      truckId: '',
+      deliveryCompany: '',
       items: [
         {
           id: generateId(),
@@ -179,6 +187,9 @@ const NewDeliveryNote = () => {
         issueDate: data.issueDate,
         notes: data.notes || '',
         status: 'pending',
+        driver_name: data.driverName || null,
+        truck_id: data.truckId || null,
+        delivery_company: data.deliveryCompany || null,
         items: data.items.map(item => {
           const product = products.find(p => p.id === item.productId);
           return {
@@ -319,6 +330,56 @@ const NewDeliveryNote = () => {
                   </FormItem>
                 )}
               />
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="driverName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <Driver className="mr-2 h-4 w-4" />
+                        Driver Name
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter driver name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="truckId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <Truck className="mr-2 h-4 w-4" />
+                        Truck ID
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter truck ID or license plate" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="deliveryCompany"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery Company</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter delivery company name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

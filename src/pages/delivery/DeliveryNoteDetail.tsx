@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Truck, Driver } from 'lucide-react';
 
 const DeliveryNoteDetail = () => {
   const { id } = useParams();
@@ -158,6 +158,47 @@ const DeliveryNoteDetail = () => {
               </CardContent>
             </Card>
           </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Transportation Details</CardTitle>
+              <CardDescription>Information about delivery transport</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {deliveryNote.driver_name && (
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground flex items-center">
+                      <Driver className="mr-2 h-4 w-4" />
+                      Driver:
+                    </span>
+                    <span>{deliveryNote.driver_name}</span>
+                  </div>
+                )}
+                
+                {deliveryNote.truck_id && (
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground flex items-center">
+                      <Truck className="mr-2 h-4 w-4" />
+                      Truck ID:
+                    </span>
+                    <span>{deliveryNote.truck_id}</span>
+                  </div>
+                )}
+                
+                {deliveryNote.delivery_company && (
+                  <div className="grid grid-cols-2">
+                    <span className="text-sm text-muted-foreground">Delivery Company:</span>
+                    <span>{deliveryNote.delivery_company}</span>
+                  </div>
+                )}
+                
+                {!deliveryNote.driver_name && !deliveryNote.truck_id && !deliveryNote.delivery_company && (
+                  <p className="text-sm text-muted-foreground italic">No transportation details provided</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
           
           <Card>
             <CardHeader>

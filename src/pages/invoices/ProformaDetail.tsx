@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -41,6 +42,8 @@ import {
   Send,
   ThumbsDown,
   ThumbsUp,
+  Cheque,
+  Cash
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -164,6 +167,13 @@ const ProformaDetail = () => {
     return new Date(dateString).toLocaleDateString('fr-DZ');
   };
 
+  const getPaymentTypeIcon = (paymentType: string) => {
+    if (paymentType === 'cash') {
+      return <Cash className="h-4 w-4 text-green-600 mr-2" />;
+    }
+    return <Cheque className="h-4 w-4 text-blue-600 mr-2" />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -238,6 +248,13 @@ const ProformaDetail = () => {
                 {proforma.status}
               </Badge>
             </div>
+            <div>
+              <strong className="font-semibold">Payment Method:</strong>{" "}
+              <span className="flex items-center">
+                {getPaymentTypeIcon(proforma.payment_type || 'cheque')}
+                {proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}
+              </span>
+            </div>
             {proforma.finalInvoiceId && (
               <div>
                 <strong className="font-semibold">Final Invoice:</strong>{" "}
@@ -308,6 +325,16 @@ const ProformaDetail = () => {
                   {formatCurrency(proforma.taxTotal)}
                 </td>
               </tr>
+              {proforma.payment_type === 'cash' && proforma.stamp_tax > 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-2 text-right font-semibold">
+                    Stamp Tax:
+                  </td>
+                  <td colSpan={3} className="px-4 py-2 text-right">
+                    {formatCurrency(proforma.stamp_tax)}
+                  </td>
+                </tr>
+              )}
               <tr className="border-t">
                 <td colSpan={5} className="px-4 py-2 text-right font-bold text-lg">
                   Total:
