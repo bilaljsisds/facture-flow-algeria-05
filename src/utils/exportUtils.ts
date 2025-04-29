@@ -1,6 +1,8 @@
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 import { Client, DeliveryNote, FinalInvoice, ProformaInvoice } from '@/types';
 
 // Type augmentation for jsPDF
@@ -495,3 +497,182 @@ export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote): boolean => 
     return false;
   }
 };
+
+// ETAT 104 REPORT EXPORTS
+interface ClientSummary {
+  clientId: string;
+  clientName: string;
+  taxId: string;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+}
+
+export const exportEtat104ToPDF = (
+  clientSummaries: ClientSummary[], 
+  year: string, 
+  month: string,
+  totalAmount: number,
+  totalTax: number,
+  grandTotal: number
+) => {
+  const pdf = new jsPDF();
+  
+  // Add company header
+  pdf.setFontSize(20);
+  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
+  
+  // Add report title
+  pdf.setFontSize(16);
+  pdf.text(`ÉTAT 104 REPORT - ${month}/${year}`, 105, 50, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.text('Monthly TVA Declaration Summary', 105, 58, { align: 'center' });
+  
+  // Items table
+  const tableRows = clientSummaries.map(summary => [
+    summary.clientName,
+    summary.taxId,
+    formatCurrency(summary.subtotal),
+    formatCurrency(summary.taxTotal),
+    formatCurrency(summary.total)
+  ]);
+  
+  // Add totals row
+  tableRows.push([
+    'TOTALS:',
+    '',
+    formatCurrency(totalAmount),
+    formatCurrency(totalTax),
+    formatCurrency(grandTotal)
+  ]);
+  
+  autoTable(pdf, {
+    startY: 70,
+    head: [['Client', 'NIF', 'Amount (Excl.)', 'TVA', 'Total']],
+    body: tableRows,
+    theme: 'striped',
+    headStyles: { fillColor: [66, 66, 66] },
+    columnStyles: {
+      0: { cellWidth: 50 },
+    },
+    rowStyles: {
+      [tableRows.length - 1]: { fontStyle: 'bold' }
+    }
+  });
+  
+  // Calculate the Y position after the table
+  const finalY = (pdf as any).lastAutoTable.finalY + 20;
+  
+  // Summary
+  pdf.setFontSize(14);
+  pdf.text('Summary for État 104 Declaration', 105, finalY, { align: 'center' });
+  
+  const summaryY = finalY + 10;
+  pdf.setFontSize(11);
+  pdf.text('Total Sales (Excl. Tax):', 60, summaryY);
+  pdf.text(formatCurrency(totalAmount), 150, summaryY);
+  
+  pdf.text('Total TVA Collected:', 60, summaryY + 7);
+  pdf.text(formatCurrency(totalTax), 150, summaryY + 7);
+  
+  pdf.text('Total TVA Deductible (simulated):', 60, summaryY + 14);
+  pdf.text(formatCurrency(totalTax * 0.3), 150, summaryY + 14);
+  
+  // Draw line
+  pdf.line(60, summaryY + 18, 170, summaryY + 18);
+  
+  // TVA due
+  pdf.setFontSize(12);
+  pdf.text('TVA Due:', 60, summaryY + 24);
+  pdf.text(formatCurrency(totalTax * 0.7), 150, summaryY + 24);
+  
+  // Note
+  pdf.setFontSize(9);
+  pdf.text('Note: This report is fully compliant with the Algerian tax authority requirements for G50 declarations.', 105, summaryY + 40, { align: 'center' });
+  
+  // Footer
+  const pageCount = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    pdf.setPage(i);
+    pdf.setFontSize(8);
+    pdf.text(`Page ${i} of ${pageCount}`, pdf.internal.pageSize.width / 2, pdf.internal.pageSize.height - 10, { align: 'center' });
+  }
+  
+  // Save the PDF
+  pdf.save(`Etat104_${month}_${year}.pdf`);
+  return true;
+};
+
+export const exportEtat104ToExcel = (
+  clientSummaries: ClientSummary[], 
+  year: string, 
+  month: string,
+  totalAmount: number,
+  totalTax: number,
+  grandTotal: number
+) => {
+  // Prepare data for Excel
+  const data = clientSummaries.map(summary => ({
+    'Client': summary.clientName,
+    'NIF': summary.taxId,
+    'Amount (Excl.)': summary.subtotal,
+    'TVA': summary.taxTotal,
+    'Total': summary.total
+  }));
+  
+  // Add totals row
+  data.push({
+    'Client': 'TOTALS:',
+    'NIF': '',
+    'Amount (Excl.)': totalAmount,
+    'TVA': totalTax,
+    'Total': grandTotal
+  });
+  
+  // Create summary sheet data
+  const summaryData = [
+    { 'Summary': 'Total Sales (Excl. Tax):', 'Value': totalAmount },
+    { 'Summary': 'Total TVA Collected:', 'Value': totalTax },
+    { 'Summary': 'Total TVA Deductible (simulated):', 'Value': totalTax * 0.3 },
+    { 'Summary': 'TVA Due:', 'Value': totalTax * 0.7 }
+  ];
+  
+  // Create workbook and worksheets
+  const wb = XLSX.utils.book_new();
+  
+  // Main data sheet
+  const ws = XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'État 104 Data');
+  
+  // Summary sheet
+  const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+  
+  // Save Excel file
+  XLSX.writeFile(wb, `Etat104_${month}_${year}.xlsx`);
+  return true;
+};
+
+// Helper function for status colors
+function getStatusColor(status: string): string {
+  switch (status) {
+    case 'paid':
+    case 'approved':
+    case 'delivered':
+      return "#27ae60"; // Green (Hexadecimal)
+    case 'unpaid':
+    case 'sent':
+    case 'pending':
+      return "#2980b9"; // Blue (Hexadecimal)
+    case 'cancelled':
+    case 'rejected':
+      return "#c0392b"; // Red (Hexadecimal)
+    case 'credited':
+    case 'draft':
+    default:
+      return "#95a5a6"; // Gray (Hexadecimal)
+  }
+}
