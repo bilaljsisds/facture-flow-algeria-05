@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -99,6 +98,25 @@ const DeliveryNoteDetail = () => {
     }
   });
   
+  const markAsDeliveredMutation = useMutation({
+    mutationFn: () => mockDataService.markDeliveryNoteAsDelivered(id || ''),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deliveryNotes'] });
+      toast({
+        title: 'Delivery Note Updated',
+        description: 'Delivery note has been marked as delivered'
+      });
+    },
+    onError: (error) => {
+      console.error('Error marking delivery note as delivered:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Failed to mark delivery note as delivered. Please try again.'
+      });
+    }
+  });
+
   const formatCurrency = (amount?: number) => {
     if (amount === undefined) return '';
     return amount.toLocaleString('fr-DZ', { 
@@ -127,14 +145,6 @@ const DeliveryNoteDetail = () => {
     updateDeliveryNoteMutation.mutate(data);
   };
 
-  if (!isNewNote && isLoading) {
-    return (
-      <div className="flex h-40 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
   const handlePrintDeliveryNote = () => {
     if (!deliveryNote) return;
     
@@ -155,6 +165,19 @@ const DeliveryNoteDetail = () => {
       });
     }
   };
+
+  const handleMarkAsDelivered = () => {
+    if (!id) return;
+    markAsDeliveredMutation.mutate();
+  };
+
+  if (!isNewNote && isLoading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -557,7 +580,10 @@ const DeliveryNoteDetail = () => {
               )}
               
               {deliveryNote.status === 'pending' && (
-                <Button>Mark as Delivered</Button>
+                <Button onClick={handleMarkAsDelivered}>
+                  <Truck className="mr-2 h-4 w-4" />
+                  Mark as Delivered
+                </Button>
               )}
             </div>
           </>

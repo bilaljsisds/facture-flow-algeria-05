@@ -1,1052 +1,826 @@
-import { supabase, beginTransaction, commitTransaction, rollbackTransaction } from '@/integrations/supabase/client';
-import { 
-  Client, 
-  Product, 
-  ProformaInvoice, 
-  FinalInvoice, 
-  DeliveryNote 
+import {
+  Client,
+  DeliveryNote,
+  FinalInvoice,
+  InvoiceItem,
+  ProformaInvoice,
+  Product,
+  User,
+  UserRole,
+  generateId,
+  getCurrentDate,
+  getFutureDate,
 } from '@/types';
 
-class MockDataService {
-  // Client methods
-  async getClients(): Promise<Client[]> {
-    try {
-      // Here we would connect to the API
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*');
-      
-      if (error) throw error;
-      
-      return data as Client[];
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-      return [];
-    }
-  }
+// Mock data
+const mockClients: Client[] = [
+  {
+    id: generateId(),
+    name: 'Acme Corp',
+    address: '123 Main St',
+    taxId: '123456789',
+    phone: '555-1234',
+    email: 'info@acme.com',
+    country: 'USA',
+    city: 'New York',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    name: 'Beta Co',
+    address: '456 Elm St',
+    taxId: '987654321',
+    phone: '555-5678',
+    email: 'sales@beta.com',
+    country: 'Canada',
+    city: 'Toronto',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    name: 'Gamma Ltd',
+    address: '789 Oak St',
+    taxId: '456789123',
+    phone: '555-9012',
+    email: 'support@gamma.com',
+    country: 'UK',
+    city: 'London',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+];
 
-  async getClientById(id: string): Promise<Client | null> {
-    try {
-      // Find client by ID
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      
-      return data as Client;
-    } catch (error) {
-      console.error('Error fetching client by ID:', error);
-      return null;
-    }
-  }
+const mockProducts: Product[] = [
+  {
+    id: generateId(),
+    code: 'A101',
+    name: 'Widget',
+    description: 'A simple widget',
+    unitprice: 10.0,
+    taxrate: 0.20,
+    stockquantity: 100,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    code: 'B202',
+    name: 'Gadget',
+    description: 'A complex gadget',
+    unitprice: 25.0,
+    taxrate: 0.20,
+    stockquantity: 50,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    code: 'C303',
+    name: 'Thingamajig',
+    description: 'A fancy thingamajig',
+    unitprice: 50.0,
+    taxrate: 0.20,
+    stockquantity: 25,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+];
 
-  async createClient(clientData: Partial<Client>): Promise<Client | null> {
-    try {
-      // Add new client
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([clientData])
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      
-      return data as Client;
-    } catch (error) {
-      console.error('Error creating client:', error);
-      return null;
-    }
-  }
+const mockInvoiceItems: InvoiceItem[] = [
+  {
+    id: generateId(),
+    productId: mockProducts[0].id,
+    product: mockProducts[0],
+    quantity: 2,
+    unitprice: mockProducts[0].unitprice,
+    taxrate: mockProducts[0].taxrate,
+    discount: 0.0,
+    totalExcl: 20.0,
+    totalTax: 4.0,
+    total: 24.0,
+  },
+  {
+    id: generateId(),
+    productId: mockProducts[1].id,
+    product: mockProducts[1],
+    quantity: 1,
+    unitprice: mockProducts[1].unitprice,
+    taxrate: mockProducts[1].taxrate,
+    discount: 0.0,
+    totalExcl: 25.0,
+    totalTax: 5.0,
+    total: 30.0,
+  },
+];
 
-  async updateClient(id: string, clientData: Partial<Client>): Promise<Client | null> {
-    try {
-      // Update existing client
-      const { data, error } = await supabase
-        .from('clients')
-        .update(clientData)
-        .eq('id', id)
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      
-      return data as Client;
-    } catch (error) {
-      console.error('Error updating client:', error);
-      return null;
-    }
-  }
+const mockProformaInvoices: ProformaInvoice[] = [
+  {
+    id: generateId(),
+    number: 'P-0001',
+    clientId: mockClients[0].id,
+    client: mockClients[0],
+    issueDate: getCurrentDate(),
+    dueDate: getFutureDate(30),
+    items: mockInvoiceItems,
+    notes: 'Proforma invoice for Acme Corp',
+    subtotal: 45.0,
+    taxTotal: 9.0,
+    total: 54.0,
+    status: 'draft',
+    payment_type: 'cheque',
+    stamp_tax: 0,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    number: 'P-0002',
+    clientId: mockClients[1].id,
+    client: mockClients[1],
+    issueDate: getCurrentDate(),
+    dueDate: getFutureDate(30),
+    items: mockInvoiceItems,
+    notes: 'Proforma invoice for Beta Co',
+    subtotal: 45.0,
+    taxTotal: 9.0,
+    total: 54.0,
+    status: 'sent',
+    payment_type: 'cash',
+    stamp_tax: 200,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+];
 
-  async deleteClient(id: string): Promise<boolean> {
-    try {
-      // Delete client
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      return true;
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      return false;
-    }
-  }
+const mockFinalInvoices: FinalInvoice[] = [
+  {
+    id: generateId(),
+    number: 'F-0001',
+    clientId: mockClients[0].id,
+    client: mockClients[0],
+    issueDate: getCurrentDate(),
+    dueDate: getFutureDate(30),
+    items: mockInvoiceItems,
+    notes: 'Final invoice for Acme Corp',
+    subtotal: 45.0,
+    taxTotal: 9.0,
+    total: 54.0,
+    status: 'unpaid',
+    proformaId: mockProformaInvoices[0].id,
+    paymentDate: undefined,
+    paymentReference: undefined,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    number: 'F-0002',
+    clientId: mockClients[1].id,
+    client: mockClients[1],
+    issueDate: getCurrentDate(),
+    dueDate: getFutureDate(30),
+    items: mockInvoiceItems,
+    notes: 'Final invoice for Beta Co',
+    subtotal: 45.0,
+    taxTotal: 9.0,
+    total: 54.0,
+    status: 'paid',
+    proformaId: mockProformaInvoices[1].id,
+    paymentDate: getCurrentDate(),
+    paymentReference: 'REF123',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+];
 
-  // Products
-  async getProducts(): Promise<Product[]> {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching products:', error);
-      throw error;
-    }
-    
-    return data.map(product => ({
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      description: product.description,
-      unitprice: product.unitprice,
-      taxrate: product.taxrate,
-      stockquantity: product.stockquantity,
-      createdAt: product.createdat || new Date().toISOString(),
-      updatedAt: product.updatedat || new Date().toISOString()
-    }));
-  }
+const mockDeliveryNotes: DeliveryNote[] = [
+  {
+    id: generateId(),
+    number: 'D-0001',
+    finalInvoiceId: mockFinalInvoices[0].id,
+    finalInvoice: mockFinalInvoices[0],
+    clientId: mockClients[0].id,
+    client: mockClients[0],
+    issueDate: getCurrentDate(),
+    deliveryDate: undefined,
+    items: mockInvoiceItems,
+    notes: 'Delivery note for Acme Corp',
+    status: 'pending',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+    driver_name: 'John Doe',
+    truck_id: 'ABC-123',
+    delivery_company: 'Speedy Delivery',
+  },
+  {
+    id: generateId(),
+    number: 'D-0002',
+    finalInvoiceId: mockFinalInvoices[1].id,
+    finalInvoice: mockFinalInvoices[1],
+    clientId: mockClients[1].id,
+    client: mockClients[1],
+    issueDate: getCurrentDate(),
+    deliveryDate: getCurrentDate(),
+    items: mockInvoiceItems,
+    notes: 'Delivery note for Beta Co',
+    status: 'delivered',
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+    driver_name: 'Jane Smith',
+    truck_id: 'XYZ-456',
+    delivery_company: 'Reliable Transport',
+  },
+];
 
-  async getProductById(id: string): Promise<Product | null> {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error(`Error fetching product ${id}:`, error);
-      return null;
-    }
-    
-    return {
-      id: data.id,
-      code: data.code,
-      name: data.name,
-      description: data.description,
-      unitprice: data.unitprice,
-      taxrate: data.taxrate,
-      stockquantity: data.stockquantity,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
+const mockUsers: User[] = [
+  {
+    id: generateId(),
+    email: 'admin@example.com',
+    name: 'Admin User',
+    role: UserRole.ADMIN,
+    active: true,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    email: 'accountant@example.com',
+    name: 'Accountant User',
+    role: UserRole.ACCOUNTANT,
+    active: true,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    email: 'salesperson@example.com',
+    name: 'Salesperson User',
+    role: UserRole.SALESPERSON,
+    active: true,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+  {
+    id: generateId(),
+    email: 'viewer@example.com',
+    name: 'Viewer User',
+    role: UserRole.VIEWER,
+    active: true,
+    createdAt: getCurrentDate(),
+    updatedAt: getCurrentDate(),
+  },
+];
+
+// Mock data service
+export const mockDataService = {
+  // Get all clients
+  getClients: async (): Promise<Client[]> => {
+    const storedClients = localStorage.getItem('clients') || JSON.stringify(mockClients);
+    return JSON.parse(storedClients);
+  },
+
+  // Get client by ID
+  getClientById: async (id: string): Promise<Client | undefined> => {
+    const clients = await mockDataService.getClients();
+    return clients.find((client) => client.id === id);
+  },
+
+  // Create a new client
+  createClient: async (client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client> => {
+    const newClient: Client = {
+      id: generateId(),
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      ...client,
     };
-  }
+    const clients = await mockDataService.getClients();
+    clients.push(newClient);
+    localStorage.setItem('clients', JSON.stringify(clients));
+    return newClient;
+  },
 
-  async createProduct(productData: Partial<Product>): Promise<Product | null> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      
-      return data as Product;
-    } catch (error) {
-      console.error('Error creating product:', error);
-      return null;
+  // Update an existing client
+  updateClient: async (id: string, updates: Partial<Client>): Promise<Client> => {
+    const clients = await mockDataService.getClients();
+    const index = clients.findIndex((client) => client.id === id);
+    if (index === -1) {
+      throw new Error('Client not found');
     }
-  }
-
-  async updateProduct(id: string, productData: Partial<Product>): Promise<Product | null> {
-    const updateData: any = {};
-    if (productData.code !== undefined) updateData.code = productData.code;
-    if (productData.name !== undefined) updateData.name = productData.name;
-    if (productData.description !== undefined) updateData.description = productData.description;
-    if (productData.unitprice !== undefined) updateData.unitprice = productData.unitprice;
-    if (productData.taxrate !== undefined) updateData.taxrate = productData.taxrate;
-    if (productData.stockquantity !== undefined) updateData.stockquantity = productData.stockquantity;
-    
-    const { data, error } = await supabase
-      .from('products')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error(`Error updating product ${id}:`, error);
-      return null;
-    }
-    
-    return {
-      id: data.id,
-      code: data.code,
-      name: data.name,
-      description: data.description,
-      unitprice: data.unitprice,
-      taxrate: data.taxrate,
-      stockquantity: data.stockquantity,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
+    const updatedClient: Client = {
+      ...clients[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
     };
-  }
+    clients[index] = updatedClient;
+    localStorage.setItem('clients', JSON.stringify(clients));
+    return updatedClient;
+  },
 
-  async deleteProduct(id: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error(`Error deleting product ${id}:`, error);
-      return false;
-    }
-    
-    return true;
-  }
+  // Delete a client
+  deleteClient: async (id: string): Promise<void> => {
+    const clients = await mockDataService.getClients();
+    const updatedClients = clients.filter((client) => client.id !== id);
+    localStorage.setItem('clients', JSON.stringify(updatedClients));
+  },
 
-  // Proforma Invoices
-  async getProformaInvoices(): Promise<ProformaInvoice[]> {
-    const { data: invoicesData, error: invoicesError } = await supabase
-      .from('proforma_invoices')
-      .select('*, clients(*)');
-    
-    if (invoicesError) {
-      console.error('Error fetching proforma invoices:', invoicesError);
-      throw invoicesError;
+  // Get all products
+  getProducts: async (): Promise<Product[]> => {
+    const storedProducts = localStorage.getItem('products') || JSON.stringify(mockProducts);
+    return JSON.parse(storedProducts);
+  },
+
+  // Get product by ID
+  getProductById: async (id: string): Promise<Product | undefined> => {
+    const products = await mockDataService.getProducts();
+    return products.find((product) => product.id === id);
+  },
+
+  // Create a new product
+  createProduct: async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
+    const newProduct: Product = {
+      id: generateId(),
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      ...product,
+    };
+    const products = await mockDataService.getProducts();
+    products.push(newProduct);
+    localStorage.setItem('products', JSON.stringify(products));
+    return newProduct;
+  },
+
+  // Update an existing product
+  updateProduct: async (id: string, updates: Partial<Product>): Promise<Product> => {
+    const products = await mockDataService.getProducts();
+    const index = products.findIndex((product) => product.id === id);
+    if (index === -1) {
+      throw new Error('Product not found');
     }
+    const updatedProduct: Product = {
+      ...products[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
+    };
+    products[index] = updatedProduct;
+    localStorage.setItem('products', JSON.stringify(products));
+    return updatedProduct;
+  },
+
+  // Delete a product
+  deleteProduct: async (id: string): Promise<void> => {
+    const products = await mockDataService.getProducts();
+    const updatedProducts = products.filter((product) => product.id !== id);
+    localStorage.setItem('products', JSON.stringify(updatedProducts));
+  },
+
+  // Get all proforma invoices
+  getProformaInvoices: async (): Promise<ProformaInvoice[]> => {
+    const storedInvoices = localStorage.getItem('proformaInvoices') || JSON.stringify(mockProformaInvoices);
+    const invoices = JSON.parse(storedInvoices) as ProformaInvoice[];
     
-    const proformas: ProformaInvoice[] = [];
-    
-    for (const invoice of invoicesData) {
-      const { data: itemsJoinData, error: itemsJoinError } = await supabase
-        .from('proforma_invoice_items')
-        .select('*, invoice_items(*)')
-        .eq('proformainvoiceid', invoice.id);
-      
-      if (itemsJoinError) {
-        console.error(`Error fetching items for proforma invoice ${invoice.id}:`, itemsJoinError);
-        continue;
-      }
-      
-      const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-        const item = joinItem.invoice_items;
-        let product = null;
-        
-        if (item.productid) {
-          const { data: productData, error: productError } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', item.productid)
-            .single();
-          
-          if (!productError) {
-            product = {
-              id: productData.id,
-              code: productData.code,
-              name: productData.name,
-              description: productData.description,
-              unitprice: productData.unitprice,
-              taxrate: productData.taxrate,
-              stockquantity: productData.stockquantity,
-              createdAt: productData.createdat || new Date().toISOString(),
-              updatedAt: productData.updatedat || new Date().toISOString()
-            };
-          }
-        }
-        
-        return {
-          id: item.id,
-          productId: item.productid,
-          product,
-          quantity: item.quantity,
-          unitprice: item.unitprice,
-          taxrate: item.taxrate,
-          discount: item.discount,
-          totalExcl: item.totalexcl,
-          totalTax: item.totaltax,
-          total: item.total
-        };
-      }));
-      
-      const client = invoice.clients ? {
-        id: invoice.clients.id,
-        name: invoice.clients.name,
-        address: invoice.clients.address,
-        taxId: invoice.clients.taxid,
-        phone: invoice.clients.phone,
-        email: invoice.clients.email,
-        country: invoice.clients.country,
-        city: invoice.clients.city,
-        createdAt: invoice.clients.createdat || new Date().toISOString(),
-        updatedAt: invoice.clients.updatedat || new Date().toISOString()
-      } : undefined;
-      
-      proformas.push({
-        id: invoice.id,
-        number: invoice.number,
-        clientId: invoice.clientid,
-        client,
-        issueDate: invoice.issuedate,
-        dueDate: invoice.duedate,
-        items,
-        notes: invoice.notes || '',
-        subtotal: invoice.subtotal,
-        taxTotal: invoice.taxtotal,
-        total: invoice.total,
-        status: invoice.status as 'draft' | 'sent' | 'approved' | 'rejected',
-        finalInvoiceId: invoice.finalinvoiceid,
-        createdAt: invoice.createdat || new Date().toISOString(),
-        updatedAt: invoice.updatedat || new Date().toISOString()
+    // Populate client data
+    const clients = await mockDataService.getClients();
+    invoices.forEach(invoice => {
+      invoice.client = clients.find(c => c.id === invoice.clientId);
+    });
+
+    // Populate items data
+    const products = await mockDataService.getProducts();
+    invoices.forEach(invoice => {
+      invoice.items.forEach(item => {
+        item.product = products.find(p => p.id === item.productId);
       });
-    }
-    
-    return proformas;
-  }
+    });
 
-  async getProformaInvoiceById(id: string): Promise<ProformaInvoice | null> {
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('proforma_invoices')
-      .select('*, clients(*)')
-      .eq('id', id)
-      .single();
-    
-    if (invoiceError) {
-      console.error(`Error fetching proforma invoice ${id}:`, invoiceError);
-      return null;
-    }
-    
-    const { data: itemsJoinData, error: itemsJoinError } = await supabase
-      .from('proforma_invoice_items')
-      .select('*, invoice_items(*)')
-      .eq('proformainvoiceid', invoice.id);
-    
-    if (itemsJoinError) {
-      console.error(`Error fetching items for proforma invoice ${id}:`, itemsJoinError);
-      return null;
-    }
-    
-    const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-      const item = joinItem.invoice_items;
-      let product = null;
-      
-      if (item.productid) {
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', item.productid)
-          .single();
-        
-        if (!productError) {
-          product = {
-            id: productData.id,
-            code: productData.code,
-            name: productData.name,
-            description: productData.description,
-            unitprice: productData.unitprice,
-            taxrate: productData.taxrate,
-            stockquantity: productData.stockquantity,
-            createdAt: productData.createdat || new Date().toISOString(),
-            updatedAt: productData.updatedat || new Date().toISOString()
-          };
-        }
-      }
-      
-      return {
-        id: item.id,
-        productId: item.productid,
-        product,
-        quantity: item.quantity,
-        unitprice: item.unitprice,
-        taxrate: item.taxrate,
-        discount: item.discount,
-        totalExcl: item.totalexcl,
-        totalTax: item.totaltax,
-        total: item.total
-      };
-    }));
-    
-    const client = invoice.clients ? {
-      id: invoice.clients.id,
-      name: invoice.clients.name,
-      address: invoice.clients.address,
-      taxId: invoice.clients.taxid,
-      phone: invoice.clients.phone,
-      email: invoice.clients.email,
-      country: invoice.clients.country,
-      city: invoice.clients.city,
-      createdAt: invoice.clients.createdat || new Date().toISOString(),
-      updatedAt: invoice.clients.updatedat || new Date().toISOString()
-    } : undefined;
-    
-    return {
-      id: invoice.id,
-      number: invoice.number,
-      clientId: invoice.clientid,
-      client,
-      issueDate: invoice.issuedate,
-      dueDate: invoice.duedate,
-      items,
-      notes: invoice.notes || '',
-      subtotal: invoice.subtotal,
-      taxTotal: invoice.taxtotal,
-      total: invoice.total,
-      status: invoice.status as 'draft' | 'sent' | 'approved' | 'rejected',
-      finalInvoiceId: invoice.finalinvoiceid,
-      createdAt: invoice.createdat || new Date().toISOString(),
-      updatedAt: invoice.updatedat || new Date().toISOString()
+    return invoices;
+  },
+
+  // Get proforma invoice by ID
+  getProformaInvoiceById: async (id: string): Promise<ProformaInvoice | undefined> => {
+    const invoices = await mockDataService.getProformaInvoices();
+    return invoices.find((invoice) => invoice.id === id);
+  },
+
+  // Create a new proforma invoice
+  createProformaInvoice: async (invoice: Omit<ProformaInvoice, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProformaInvoice> => {
+    const newInvoice: ProformaInvoice = {
+      id: generateId(),
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      ...invoice,
     };
-  }
+    const invoices = await mockDataService.getProformaInvoices();
+    invoices.push(newInvoice);
+    localStorage.setItem('proformaInvoices', JSON.stringify(invoices));
+    return newInvoice;
+  },
 
-  async createProformaInvoice(proforma: any): Promise<ProformaInvoice> {
-    try {
-      await beginTransaction();
-      
-      try {
-        const { data: numberData, error: numberError } = await supabase.rpc('generate_proforma_number');
-        if (numberError) throw numberError;
-        
-        const { data: createdInvoice, error: invoiceError } = await supabase
-          .from('proforma_invoices')
-          .insert({
-            clientid: proforma.clientId,
-            number: numberData || proforma.number,
-            issuedate: proforma.issueDate,
-            duedate: proforma.dueDate,
-            notes: proforma.notes || '',
-            subtotal: proforma.subtotal,
-            taxtotal: proforma.taxTotal,
-            total: proforma.total,
-            status: proforma.status || 'draft'
-          })
-          .select()
-          .single();
-        
-        if (invoiceError) throw invoiceError;
-        
-        for (const item of proforma.items) {
-          const { data: createdItem, error: itemError } = await supabase
-            .from('invoice_items')
-            .insert({
-              productid: item.productId,
-              quantity: item.quantity,
-              unitprice: item.unitprice,
-              taxrate: item.taxrate,
-              discount: item.discount || 0,
-              totalexcl: item.totalExcl,
-              totaltax: item.totalTax,
-              total: item.total
-            })
-            .select()
-            .single();
-          
-          if (itemError) throw itemError;
-          
-          const { error: linkError } = await supabase
-            .from('proforma_invoice_items')
-            .insert({
-              proformainvoiceid: createdInvoice.id,
-              itemid: createdItem.id
-            });
-          
-          if (linkError) throw linkError;
-        }
-        
-        await commitTransaction();
-        return await mockDataService.getProformaInvoiceById(createdInvoice.id);
-        
-      } catch (error) {
-        await rollbackTransaction();
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error creating proforma invoice:', error);
-      throw error;
+  // Update an existing proforma invoice
+  updateProformaInvoice: async (id: string, updates: Partial<ProformaInvoice>): Promise<ProformaInvoice> => {
+    const invoices = await mockDataService.getProformaInvoices();
+    const index = invoices.findIndex((invoice) => invoice.id === id);
+    if (index === -1) {
+      throw new Error('Proforma invoice not found');
     }
-  }
-
-  async updateProformaStatus(id: string, status: 'draft' | 'sent' | 'approved' | 'rejected'): Promise<{ id: string; status: string }> {
-    const { error } = await supabase
-      .from('proforma_invoices')
-      .update({ status })
-      .eq('id', id);
-    
-    if (error) {
-      console.error(`Error updating proforma invoice status ${id}:`, error);
-      throw error;
-    }
-    
-    return {
-      id,
-      status
+    const updatedInvoice: ProformaInvoice = {
+      ...invoices[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
     };
-  }
+    invoices[index] = updatedInvoice;
+    localStorage.setItem('proformaInvoices', JSON.stringify(invoices));
+    return updatedInvoice;
+  },
 
-  async convertProformaToFinal(proformaId: string): Promise<{ proforma: ProformaInvoice | null, finalInvoice: FinalInvoice | null }> {
-    try {
-      await beginTransaction();
-      
-      try {
-        const proforma = await mockDataService.getProformaInvoiceById(proformaId);
-        
-        const { data: numberData, error: numberError } = await supabase.rpc('generate_invoice_number');
-        if (numberError) throw numberError;
-        
-        const { data: createdInvoice, error: invoiceError } = await supabase
-          .from('final_invoices')
-          .insert({
-            clientid: proforma.clientId,
-            proformaid: proformaId,
-            number: numberData,
-            issuedate: proforma.issueDate,
-            duedate: proforma.dueDate,
-            notes: proforma.notes,
-            subtotal: proforma.subtotal,
-            taxtotal: proforma.taxTotal,
-            total: proforma.total,
-            status: 'unpaid'
-          })
-          .select()
-          .single();
-        
-        if (invoiceError) throw invoiceError;
-        
-        for (const item of proforma.items) {
-          const { error: linkError } = await supabase
-            .from('final_invoice_items')
-            .insert({
-              finalinvoiceid: createdInvoice.id,
-              itemid: item.id
-            });
-          
-          if (linkError) throw linkError;
-        }
-        
-        const { error: updateError } = await supabase
-          .from('proforma_invoices')
-          .update({
-            finalinvoiceid: createdInvoice.id,
-            status: 'approved'
-          })
-          .eq('id', proformaId);
-        
-        if (updateError) throw updateError;
-        
-        await commitTransaction();
-        
-        const updatedProforma = await mockDataService.getProformaInvoiceById(proformaId);
-        const finalInvoice = await mockDataService.getFinalInvoiceById(createdInvoice.id);
-        
-        return { proforma: updatedProforma, finalInvoice };
-        
-      } catch (error) {
-        await rollbackTransaction();
-        throw error;
-      }
-    } catch (error) {
-      console.error(`Error converting proforma invoice ${proformaId} to final:`, error);
-      throw error;
-    }
-  }
+  // Update proforma invoice status
+  updateProformaStatus: async (id: string, status: ProformaInvoice['status']): Promise<ProformaInvoice> => {
+    const invoices = await mockDataService.getProformaInvoices();
+    const index = invoices.findIndex((invoice) => invoice.id === id);
 
-  // Final Invoices
-  async getFinalInvoices(): Promise<FinalInvoice[]> {
-    const { data: invoicesData, error: invoicesError } = await supabase
-      .from('final_invoices')
-      .select('*, clients(*)');
-    
-    if (invoicesError) {
-      console.error('Error fetching final invoices:', invoicesError);
-      throw invoicesError;
+    if (index === -1) {
+      throw new Error('Proforma invoice not found');
     }
-    
-    const finalInvoices: FinalInvoice[] = [];
-    
-    for (const invoice of invoicesData) {
-      const { data: itemsJoinData, error: itemsJoinError } = await supabase
-        .from('final_invoice_items')
-        .select('*, invoice_items(*)')
-        .eq('finalinvoiceid', invoice.id);
-      
-      if (itemsJoinError) {
-        console.error(`Error fetching items for final invoice ${invoice.id}:`, itemsJoinError);
-        continue;
-      }
-      
-      const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-        const item = joinItem.invoice_items;
-        let product = null;
-        
-        if (item.productid) {
-          const { data: productData, error: productError } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', item.productid)
-            .single();
-          
-          if (!productError) {
-            product = {
-              id: productData.id,
-              code: productData.code,
-              name: productData.name,
-              description: productData.description,
-              unitprice: productData.unitprice,
-              taxrate: productData.taxrate,
-              stockquantity: productData.stockquantity,
-              createdAt: productData.createdat || new Date().toISOString(),
-              updatedAt: productData.updatedat || new Date().toISOString()
-            };
-          }
-        }
-        
-        return {
-          id: item.id,
-          productId: item.productid,
-          product,
-          quantity: item.quantity,
-          unitprice: item.unitprice,
-          taxrate: item.taxrate,
-          discount: item.discount,
-          totalExcl: item.totalexcl,
-          totalTax: item.totaltax,
-          total: item.total
-        };
-      }));
-      
-      const client = invoice.clients ? {
-        id: invoice.clients.id,
-        name: invoice.clients.name,
-        address: invoice.clients.address,
-        taxId: invoice.clients.taxid,
-        phone: invoice.clients.phone,
-        email: invoice.clients.email,
-        country: invoice.clients.country,
-        city: invoice.clients.city,
-        createdAt: invoice.clients.createdat || new Date().toISOString(),
-        updatedAt: invoice.clients.updatedat || new Date().toISOString()
-      } : undefined;
-      
-      finalInvoices.push({
-        id: invoice.id,
-        number: invoice.number,
-        clientId: invoice.clientid,
-        client,
-        issueDate: invoice.issuedate,
-        dueDate: invoice.duedate,
-        items,
-        notes: invoice.notes || '',
-        subtotal: invoice.subtotal,
-        taxTotal: invoice.taxtotal,
-        total: invoice.total,
-        status: invoice.status as 'unpaid' | 'paid' | 'cancelled' | 'credited',
-        proformaId: invoice.proformaid,
-        paymentDate: invoice.paymentdate,
-        paymentReference: invoice.paymentreference,
-        createdAt: invoice.createdat || new Date().toISOString(),
-        updatedAt: invoice.updatedat || new Date().toISOString()
+
+    const updatedInvoice: ProformaInvoice = {
+      ...invoices[index],
+      status: status,
+      updatedAt: getCurrentDate(),
+    };
+
+    invoices[index] = updatedInvoice;
+    localStorage.setItem('proformaInvoices', JSON.stringify(invoices));
+    return updatedInvoice;
+  },
+
+  // Convert proforma invoice to final invoice
+  convertProformaToFinal: async (proformaId: string): Promise<{ proforma: ProformaInvoice | undefined; finalInvoice: FinalInvoice }> => {
+    const proformaInvoices = await mockDataService.getProformaInvoices();
+    const proformaIndex = proformaInvoices.findIndex((invoice) => invoice.id === proformaId);
+
+    if (proformaIndex === -1) {
+      throw new Error('Proforma invoice not found');
+    }
+
+    const proforma = proformaInvoices[proformaIndex];
+
+    if (proforma.status !== 'approved') {
+      throw new Error('Proforma invoice must be approved before converting to final invoice');
+    }
+
+    const newFinalInvoice: FinalInvoice = {
+      id: generateId(),
+      number: 'F-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
+      clientId: proforma.clientId,
+      client: proforma.client,
+      issueDate: getCurrentDate(),
+      dueDate: getFutureDate(30),
+      items: proforma.items,
+      notes: proforma.notes,
+      subtotal: proforma.subtotal,
+      taxTotal: proforma.taxTotal,
+      total: proforma.total,
+      status: 'unpaid',
+      proformaId: proforma.id,
+      paymentDate: undefined,
+      paymentReference: undefined,
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+    };
+
+    const finalInvoices = await mockDataService.getFinalInvoices();
+    finalInvoices.push(newFinalInvoice);
+    localStorage.setItem('finalInvoices', JSON.stringify(finalInvoices));
+
+    const updatedProforma: ProformaInvoice = {
+      ...proforma,
+      finalInvoiceId: newFinalInvoice.id,
+      updatedAt: getCurrentDate(),
+    };
+
+    proformaInvoices[proformaIndex] = updatedProforma;
+    localStorage.setItem('proformaInvoices', JSON.stringify(proformaInvoices));
+
+    return {
+      proforma: updatedProforma,
+      finalInvoice: newFinalInvoice,
+    };
+  },
+
+  // Get all final invoices
+  getFinalInvoices: async (): Promise<FinalInvoice[]> => {
+    const storedInvoices = localStorage.getItem('finalInvoices') || JSON.stringify(mockFinalInvoices);
+    const invoices = JSON.parse(storedInvoices) as FinalInvoice[];
+
+    // Populate client data
+    const clients = await mockDataService.getClients();
+    invoices.forEach(invoice => {
+      invoice.client = clients.find(c => c.id === invoice.clientId);
+    });
+
+    // Populate items data
+    const products = await mockDataService.getProducts();
+    invoices.forEach(invoice => {
+      invoice.items.forEach(item => {
+        item.product = products.find(p => p.id === item.productId);
       });
-    }
-    
-    return finalInvoices;
-  }
+    });
 
-  async getFinalInvoiceById(id: string): Promise<FinalInvoice | null> {
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('final_invoices')
-      .select('*, clients(*)')
-      .eq('id', id)
-      .single();
-    
-    if (invoiceError) {
-      console.error(`Error fetching final invoice ${id}:`, invoiceError);
-      return null;
+    return invoices;
+  },
+
+  // Get final invoice by ID
+  getFinalInvoiceById: async (id: string): Promise<FinalInvoice | undefined> => {
+    const invoices = await mockDataService.getFinalInvoices();
+    return invoices.find((invoice) => invoice.id === id);
+  },
+
+  // Update an existing final invoice
+  updateFinalInvoice: async (id: string, updates: Partial<FinalInvoice>): Promise<FinalInvoice> => {
+    const invoices = await mockDataService.getFinalInvoices();
+    const index = invoices.findIndex((invoice) => invoice.id === id);
+    if (index === -1) {
+      throw new Error('Final invoice not found');
     }
-    
-    const { data: itemsJoinData, error: itemsJoinError } = await supabase
-      .from('final_invoice_items')
-      .select('*, invoice_items(*)')
-      .eq('finalinvoiceid', invoice.id);
-    
-    if (itemsJoinError) {
-      console.error(`Error fetching items for final invoice ${id}:`, itemsJoinError);
-      return null;
-    }
-    
-    const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-      const item = joinItem.invoice_items;
-      let product = null;
-      
-      if (item.productid) {
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', item.productid)
-          .single();
-        
-        if (!productError) {
-          product = {
-            id: productData.id,
-            code: productData.code,
-            name: productData.name,
-            description: productData.description,
-            unitprice: productData.unitprice,
-            taxrate: productData.taxrate,
-            stockquantity: productData.stockquantity,
-            createdAt: productData.createdat || new Date().toISOString(),
-            updatedAt: productData.updatedat || new Date().toISOString()
-          };
-        }
-      }
-      
-      return {
-        id: item.id,
-        productId: item.productid,
-        product,
-        quantity: item.quantity,
-        unitprice: item.unitprice,
-        taxrate: item.taxrate,
-        discount: item.discount,
-        totalExcl: item.totalexcl,
-        totalTax: item.totaltax,
-        total: item.total
-      };
-    }));
-    
-    const client = invoice.clients ? {
-      id: invoice.clients.id,
-      name: invoice.clients.name,
-      address: invoice.clients.address,
-      taxId: invoice.clients.taxid,
-      phone: invoice.clients.phone,
-      email: invoice.clients.email,
-      country: invoice.clients.country,
-      city: invoice.clients.city,
-      createdAt: invoice.clients.createdat || new Date().toISOString(),
-      updatedAt: invoice.clients.updatedat || new Date().toISOString()
-    } : undefined;
-    
-    return {
-      id: invoice.id,
-      number: invoice.number,
-      clientId: invoice.clientid,
-      client,
-      issueDate: invoice.issuedate,
-      dueDate: invoice.duedate,
-      items,
-      notes: invoice.notes || '',
-      subtotal: invoice.subtotal,
-      taxTotal: invoice.taxtotal,
-      total: invoice.total,
-      status: invoice.status as 'unpaid' | 'paid' | 'cancelled' | 'credited',
-      proformaId: invoice.proformaid,
-      paymentDate: invoice.paymentdate,
-      paymentReference: invoice.paymentreference,
-      createdAt: invoice.createdat || new Date().toISOString(),
-      updatedAt: invoice.updatedat || new Date().toISOString()
+    const updatedInvoice: FinalInvoice = {
+      ...invoices[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
     };
-  }
+    invoices[index] = updatedInvoice;
+    localStorage.setItem('finalInvoices', JSON.stringify(invoices));
+    return updatedInvoice;
+  },
 
-  async markFinalInvoiceAsPaid(id: string): Promise<FinalInvoice | null> {
-    try {
-      await beginTransaction();
-      
-      const { data, error } = await supabase
-        .from('final_invoices')
-        .update({ status: 'paid', paymentdate: new Date().toISOString().split('T')[0] })
-        .eq('id', id)
-        .select('*')
-        .single();
-      
-      if (error) {
-        await rollbackTransaction();
-        throw error;
-      }
-      
-      await commitTransaction();
-      return data as FinalInvoice;
-    } catch (error) {
-      console.error('Error marking invoice as paid:', error);
-      await rollbackTransaction();
-      return null;
-    }
-  }
+  // Mark final invoice as paid
+  markFinalInvoiceAsPaid: async (id: string): Promise<FinalInvoice> => {
+    const invoices = await mockDataService.getFinalInvoices();
+    const index = invoices.findIndex((invoice) => invoice.id === id);
 
-  // Delivery Notes
-  async getDeliveryNotes(): Promise<DeliveryNote[]> {
-    const { data: notesData, error: notesError } = await supabase
-      .from('delivery_notes')
-      .select('*, clients(*)');
-    
-    if (notesError) {
-      console.error('Error fetching delivery notes:', notesError);
-      throw notesError;
+    if (index === -1) {
+      throw new Error('Final invoice not found');
     }
-    
-    const deliveryNotes: DeliveryNote[] = [];
-    
-    for (const note of notesData) {
-      const { data: itemsJoinData, error: itemsJoinError } = await supabase
-        .from('delivery_note_items')
-        .select('*, invoice_items(*)')
-        .eq('deliverynoteid', note.id);
-      
-      if (itemsJoinError) {
-        console.error(`Error fetching items for delivery note ${note.id}:`, itemsJoinError);
-        continue;
-      }
-      
-      const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-        const item = joinItem.invoice_items;
-        let product = null;
-        
-        if (item.productid) {
-          const { data: productData, error: productError } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', item.productid)
-            .single();
-          
-          if (!productError) {
-            product = {
-              id: productData.id,
-              code: productData.code,
-              name: productData.name,
-              description: productData.description,
-              unitprice: productData.unitprice,
-              taxrate: productData.taxrate,
-              stockquantity: productData.stockquantity,
-              createdAt: productData.createdat || new Date().toISOString(),
-              updatedAt: productData.updatedat || new Date().toISOString()
-            };
-          }
-        }
-        
-        return {
-          id: item.id,
-          productId: item.productid,
-          product,
-          quantity: item.quantity,
-          unitprice: item.unitprice,
-          taxrate: item.taxrate,
-          discount: item.discount,
-          totalExcl: item.totalexcl,
-          totalTax: item.totaltax,
-          total: item.total
-        };
-      }));
-      
-      const client = note.clients ? {
-        id: note.clients.id,
-        name: note.clients.name,
-        address: note.clients.address,
-        taxId: note.clients.taxid,
-        phone: note.clients.phone,
-        email: note.clients.email,
-        country: note.clients.country,
-        city: note.clients.city,
-        createdAt: note.clients.createdat || new Date().toISOString(),
-        updatedAt: note.clients.updatedat || new Date().toISOString()
-      } : undefined;
-      
-      let finalInvoice;
-      if (note.finalinvoiceid) {
-        try {
-          finalInvoice = await mockDataService.getFinalInvoiceById(note.finalinvoiceid);
-        } catch (error) {
-          console.warn(`Error fetching final invoice ${note.finalinvoiceid} for delivery note ${note.id}:`, error);
-        }
-      }
-      
-      deliveryNotes.push({
-        id: note.id,
-        number: note.number,
-        finalInvoiceId: note.finalinvoiceid,
-        finalInvoice,
-        clientId: note.clientid,
-        client,
-        issueDate: note.issuedate,
-        deliveryDate: note.deliverydate,
-        items,
-        notes: note.notes || '',
-        status: note.status as 'pending' | 'delivered' | 'cancelled',
-        createdAt: note.createdat || new Date().toISOString(),
-        updatedAt: note.updatedat || new Date().toISOString()
+
+    const updatedInvoice: FinalInvoice = {
+      ...invoices[index],
+      status: 'paid',
+      paymentDate: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+    };
+
+    invoices[index] = updatedInvoice;
+    localStorage.setItem('finalInvoices', JSON.stringify(invoices));
+    return updatedInvoice;
+  },
+
+  // Get all delivery notes
+  getDeliveryNotes: async (): Promise<DeliveryNote[]> => {
+    const storedNotes = localStorage.getItem('deliveryNotes') || JSON.stringify(mockDeliveryNotes);
+    const notes = JSON.parse(storedNotes) as DeliveryNote[];
+
+    // Populate client data
+    const clients = await mockDataService.getClients();
+    notes.forEach(note => {
+      note.client = clients.find(c => c.id === note.clientId);
+    });
+
+    // Populate final invoice data
+    const finalInvoices = await mockDataService.getFinalInvoices();
+    notes.forEach(note => {
+      note.finalInvoice = finalInvoices.find(f => f.id === note.finalInvoiceId);
+    });
+
+    // Populate items data
+    const products = await mockDataService.getProducts();
+    notes.forEach(note => {
+      note.items.forEach(item => {
+        item.product = products.find(p => p.id === item.productId);
       });
-    }
-    
-    return deliveryNotes;
-  }
+    });
 
-  async getDeliveryNoteById(id: string): Promise<DeliveryNote | null> {
-    const { data: note, error: noteError } = await supabase
-      .from('delivery_notes')
-      .select('*, clients(*)')
-      .eq('id', id)
-      .single();
-    
-    if (noteError) {
-      console.error(`Error fetching delivery note ${id}:`, noteError);
-      return null;
-    }
-    
-    const { data: itemsJoinData, error: itemsJoinError } = await supabase
-      .from('delivery_note_items')
-      .select('*, invoice_items(*)')
-      .eq('deliverynoteid', note.id);
-    
-    if (itemsJoinError) {
-      console.error(`Error fetching items for delivery note ${id}:`, itemsJoinError);
-      return null;
-    }
-    
-    const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
-      const item = joinItem.invoice_items;
-      let product = null;
-      
-      if (item.productid) {
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', item.productid)
-          .single();
-        
-        if (!productError) {
-          product = {
-            id: productData.id,
-            code: productData.code,
-            name: productData.name,
-            description: productData.description,
-            unitprice: productData.unitprice,
-            taxrate: productData.taxrate,
-            stockquantity: productData.stockquantity,
-            createdAt: productData.createdat || new Date().toISOString(),
-            updatedAt: productData.updatedat || new Date().toISOString()
-          };
-        }
-      }
-      
-      return {
-        id: item.id,
-        productId: item.productid,
-        product,
-        quantity: item.quantity,
-        unitprice: item.unitprice,
-        taxrate: item.taxrate,
-        discount: item.discount,
-        totalExcl: item.totalexcl,
-        totalTax: item.totaltax,
-        total: item.total
-      };
-    }));
-    
-    const client = note.clients ? {
-      id: note.clients.id,
-      name: note.clients.name,
-      address: note.clients.address,
-      taxId: note.clients.taxid,
-      phone: note.clients.phone,
-      email: note.clients.email,
-      country: note.clients.country,
-      city: note.clients.city,
-      createdAt: note.clients.createdat || new Date().toISOString(),
-      updatedAt: note.clients.updatedat || new Date().toISOString()
-    } : undefined;
-    
-    let finalInvoice;
-    if (note.finalinvoiceid) {
-      try {
-        finalInvoice = await mockDataService.getFinalInvoiceById(note.finalinvoiceid);
-      } catch (error) {
-        console.warn(`Error fetching final invoice ${note.finalinvoiceid} for delivery note ${note.id}:`, error);
-      }
-    }
-    
-    return {
-      id: note.id,
-      number: note.number,
-      finalInvoiceId: note.finalinvoiceid,
-      finalInvoice,
-      clientId: note.clientid,
-      client,
-      issueDate: note.issuedate,
-      deliveryDate: note.deliverydate,
-      items,
-      notes: note.notes || '',
-      status: note.status as 'pending' | 'delivered' | 'cancelled',
-      createdAt: note.createdat || new Date().toISOString(),
-      updatedAt: note.updatedat || new Date().toISOString()
+    return notes;
+  },
+
+  // Get delivery note by ID
+  getDeliveryNoteById: async (id: string): Promise<DeliveryNote | undefined> => {
+    const notes = await mockDataService.getDeliveryNotes();
+    return notes.find((note) => note.id === id);
+  },
+
+  // Create a new delivery note
+  createDeliveryNote: async (note: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>): Promise<DeliveryNote> => {
+    const newNote: DeliveryNote = {
+      id: generateId(),
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      ...note,
     };
-  }
+    const notes = await mockDataService.getDeliveryNotes();
+    notes.push(newNote);
+    localStorage.setItem('deliveryNotes', JSON.stringify(notes));
+    return newNote;
+  },
 
-  async createDeliveryNote(deliveryNote: any): Promise<DeliveryNote> {
+  // Update an existing delivery note
+  updateDeliveryNote: async (id: string, updates: Partial<DeliveryNote>): Promise<DeliveryNote> => {
+    const notes = await mockDataService.getDeliveryNotes();
+    const index = notes.findIndex((note) => note.id === id);
+    if (index === -1) {
+      throw new Error('Delivery note not found');
+    }
+    const updatedNote: DeliveryNote = {
+      ...notes[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
+    };
+    notes[index] = updatedNote;
+    localStorage.setItem('deliveryNotes', JSON.stringify(notes));
+    return updatedNote;
+  },
+
+  // Get all users
+  getUsers: async (): Promise<User[]> => {
+    const storedUsers = localStorage.getItem('users') || JSON.stringify(mockUsers);
+    return JSON.parse(storedUsers);
+  },
+
+  // Get user by ID
+  getUserById: async (id: string): Promise<User | undefined> => {
+    const users = await mockDataService.getUsers();
+    return users.find((user) => user.id === id);
+  },
+
+  // Create a new user
+  createUser: async (user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> => {
+    const newUser: User = {
+      id: generateId(),
+      createdAt: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      ...user,
+    };
+    const users = await mockDataService.getUsers();
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    return newUser;
+  },
+
+  // Update an existing user
+  updateUser: async (id: string, updates: Partial<User>): Promise<User> => {
+    const users = await mockDataService.getUsers();
+    const index = users.findIndex((user) => user.id === id);
+    if (index === -1) {
+      throw new Error('User not found');
+    }
+    const updatedUser: User = {
+      ...users[index],
+      ...updates,
+      updatedAt: getCurrentDate(),
+    };
+    users[index] = updatedUser;
+    localStorage.setItem('users', JSON.stringify(users));
+    return updatedUser;
+  },
+
+  // Delete a user
+  deleteUser: async (id: string): Promise<void> => {
+    const users = await mockDataService.getUsers();
+    const updatedUsers = users.filter((user) => user.id !== id);
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  },
+  // Mark a delivery note as delivered
+  markDeliveryNoteAsDelivered: async (id) => {
     try {
-      await beginTransaction();
+      const notes = await getDeliveryNotes();
+      const index = notes.findIndex(note => note.id === id);
       
-      try {
-        const { data: numberData, error: numberError } = await supabase.rpc('generate_delivery_note_number');
-        if (numberError) throw numberError;
-        
-        const { data: createdNote, error: noteError } = await supabase
-          .from('delivery_notes')
-          .insert({
-            clientid: deliveryNote.clientId,
-            finalinvoiceid: deliveryNote.finalInvoiceId,
-            number: numberData || deliveryNote.number,
-            issuedate: deliveryNote.issueDate,
-            notes: deliveryNote.notes || '',
-            status: deliveryNote.status || 'pending'
-          })
-          .select()
-          .single();
-        
-        if (noteError) throw noteError;
-        
-        for (const item of deliveryNote.items) {
-          const { data: createdItem, error: itemError } = await supabase
-            .from('invoice_items')
-            .insert({
-              productid: item.productId,
-              quantity: item.quantity,
-              unitprice: item.unitprice || 0,
-              taxrate: item.taxrate || 0,
-              discount: item.discount || 0,
-              totalexcl: item.totalExcl || 0,
-              totaltax: item.totalTax || 0,
-              total: item.total || 0
-            })
-            .select()
-            .single();
-          
-          if (itemError) throw itemError;
-          
-          const { error: linkError } = await supabase
-            .from('delivery_note_items')
-            .insert({
-              deliverynoteid: createdNote.id,
-              itemid: createdItem.id
-            });
-          
-          if (linkError) throw linkError;
-        }
-        
-        await commitTransaction();
-        return await mockDataService.getDeliveryNoteById(createdNote.id);
-        
-      } catch (error) {
-        await rollbackTransaction();
-        throw error;
+      if (index === -1) {
+        throw new Error('Delivery note not found');
       }
+      
+      const updatedNote = {
+        ...notes[index],
+        status: 'delivered',
+        deliveryDate: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString()
+      };
+      
+      notes[index] = updatedNote;
+      localStorage.setItem('deliveryNotes', JSON.stringify(notes));
+      
+      return updatedNote;
     } catch (error) {
-      console.error('Error creating delivery note:', error);
+      console.error('Error marking delivery note as delivered:', error);
       throw error;
     }
-  }
+  },
+  
+  // Delete a proforma invoice
+  deleteProformaInvoice: async (id) => {
+    try {
+      const proformaInvoices = await getProformaInvoices();
+      const filteredInvoices = proformaInvoices.filter(invoice => invoice.id !== id);
+      
+      if (filteredInvoices.length === proformaInvoices.length) {
+        throw new Error('Proforma invoice not found');
+      }
+      
+      localStorage.setItem('proformaInvoices', JSON.stringify(filteredInvoices));
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting proforma invoice:', error);
+      throw error;
+    }
+  },
+  
+  // Undo proforma approval (set back to 'sent' status)
+  undoProformaApproval: async (id) => {
+    try {
+      const proformaInvoices = await getProformaInvoices();
+      const index = proformaInvoices.findIndex(invoice => invoice.id === id);
+      
+      if (index === -1) {
+        throw new Error('Proforma invoice not found');
+      }
+      
+      if (proformaInvoices[index].status !== 'approved') {
+        throw new Error('Cannot undo approval: proforma is not in approved status');
+      }
+      
+      const updatedInvoice = {
+        ...proformaInvoices[index],
+        status: 'sent',
+        updatedAt: new Date().toISOString()
+      };
+      
+      proformaInvoices[index] = updatedInvoice;
+      localStorage.setItem('proformaInvoices', JSON.stringify(proformaInvoices));
+      
+      return updatedInvoice;
+    } catch (error) {
+      console.error('Error undoing proforma approval:', error);
+      throw error;
+    }
+  },
+  
+  // Undo conversion to final invoice
+  undoFinalInvoiceConversion: async (proformaId) => {
+    try {
+      // Get the proforma invoice
+      const proformaInvoices = await getProformaInvoices();
+      const proformaIndex = proformaInvoices.findIndex(invoice => invoice.id === proformaId);
+      
+      if (proformaIndex === -1) {
+        throw new Error('Proforma invoice not found');
+      }
+      
+      const proforma = proformaInvoices[proformaIndex];
+      
+      if (!proforma.finalInvoiceId) {
+        throw new Error('This proforma has not been converted to a final invoice');
+      }
+      
+      // Get final invoices and remove the one linked to this proforma
+      const finalInvoices = await getFinalInvoices();
+      const updatedFinalInvoices = finalInvoices.filter(invoice => invoice.id !== proforma.finalInvoiceId);
+      
+      // Update proforma status and remove finalInvoiceId reference
+      const updatedProforma = {
+        ...proforma,
+        status: 'approved',
+        finalInvoiceId: undefined,
+        updatedAt: new Date().toISOString()
+      };
+      
+      proformaInvoices[proformaIndex] = updatedProforma;
+      
+      // Save changes
+      localStorage.setItem('proformaInvoices', JSON.stringify(proformaInvoices));
+      localStorage.setItem('finalInvoices', JSON.stringify(updatedFinalInvoices));
+      
+      return { 
+        success: true, 
+        proforma: updatedProforma 
+      };
+    } catch (error) {
+      console.error('Error undoing conversion to final invoice:', error);
+      throw error;
+    }
+  },
+};
+
+// Helper functions
+async function getProformaInvoices() {
+  const storedInvoices = localStorage.getItem('proformaInvoices') || '[]';
+  return JSON.parse(storedInvoices);
 }
 
-export const mockDataService = new MockDataService();
+async function getFinalInvoices() {
+  const storedInvoices = localStorage.getItem('finalInvoices') || '[]';
+  return JSON.parse(storedInvoices);
+}
+
+async function getDeliveryNotes() {
+  const storedNotes = localStorage.getItem('deliveryNotes') || '[]';
+  return JSON.parse(storedNotes);
+}
