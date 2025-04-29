@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -12,14 +12,35 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, Truck, Printer, Edit, Check } from 'lucide-react';
+import { ArrowLeft, Truck, Printer, Edit, Check, Save } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+const invoiceFormSchema = z.object({
+  notes: z.string().optional(),
+  issueDate: z.string(),
+  dueDate: z.string(),
+});
 
 const FinalInvoiceDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNewInvoice = id === 'new';
+  const isEditMode = window.location.pathname.includes('/edit/');
   
   const { 
     data: invoices = [],
@@ -31,7 +52,41 @@ const FinalInvoiceDetail = () => {
   });
   
   const invoice = isNewInvoice ? null : invoices.find(i => i.id === id);
+
+  const form = useForm({
+    resolver: zodResolver(invoiceFormSchema),
+    defaultValues: {
+      notes: invoice?.notes || '',
+      issueDate: invoice?.issueDate || '',
+      dueDate: invoice?.dueDate || ''
+    },
+    values: {
+      notes: invoice?.notes || '',
+      issueDate: invoice?.issueDate || '',
+      dueDate: invoice?.dueDate || ''
+    }
+  });
   
+  const updateInvoiceMutation = useMutation({
+    mutationFn: (data) => mockDataService.updateFinalInvoice(id || '', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
+      toast({
+        title: 'Invoice Updated',
+        description: 'Invoice has been updated successfully'
+      });
+      navigate(`/invoices/final/${id}`);
+    },
+    onError: (error) => {
+      console.error('Error updating invoice:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Failed to update invoice. Please try again.'
+      });
+    }
+  });
+
   const markAsPaidMutation = useMutation({
     mutationFn: () => mockDataService.markFinalInvoiceAsPaid(id || ''),
     onSuccess: () => {
@@ -102,6 +157,11 @@ const FinalInvoiceDetail = () => {
     markAsPaidMutation.mutate();
   };
 
+  const onSubmit = (data) => {
+    if (!id) return;
+    updateInvoiceMutation.mutate(data);
+  };
+
   if (!isNewInvoice && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -120,11 +180,11 @@ const FinalInvoiceDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewInvoice ? 'New Final Invoice' : `Invoice: ${invoice?.number}`}
+            {isNewInvoice ? 'New Final Invoice' : isEditMode ? `Edit Invoice: ${invoice?.number}` : `Invoice: ${invoice?.number}`}
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isNewInvoice && invoice?.status && (
+          {!isNewInvoice && !isEditMode && invoice?.status && (
             <Badge variant={getStatusBadgeVariant(invoice.status)}>
               {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
             </Badge>
@@ -133,167 +193,330 @@ const FinalInvoiceDetail = () => {
       </div>
       
       {!isNewInvoice && invoice ? (
-        <>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-                <CardDescription>Client details for this invoice</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Name:</span>
-                    <span>{invoice.client?.name}</span>
+        isEditMode ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Client Information</CardTitle>
+                    <CardDescription>Client details for this invoice</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Name:</span>
+                        <span>{invoice.client?.name}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Tax ID:</span>
+                        <span>{invoice.client?.taxId}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Address:</span>
+                        <span>{invoice.client?.address}</span>
+                      </div>
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">City:</span>
+                        <span>{invoice.client?.city}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Invoice Details</CardTitle>
+                    <CardDescription>Information about this document</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Invoice Number:</span>
+                        <span>{invoice.number}</span>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="issueDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Issue Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Due Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Status:</span>
+                        <span>
+                          <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                          </Badge>
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Items</CardTitle>
+                  <CardDescription>Products and services in this invoice</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-hidden rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-2 text-left">Product</th>
+                          <th className="px-4 py-2 text-right">Qty</th>
+                          <th className="px-4 py-2 text-right">Unit Price</th>
+                          <th className="px-4 py-2 text-right">Tax</th>
+                          <th className="px-4 py-2 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoice.items.map((item) => (
+                          <tr key={item.id} className="border-b">
+                            <td className="px-4 py-2">
+                              <div>
+                                <div className="font-medium">{item.product?.name}</div>
+                                <div className="text-xs text-muted-foreground">{item.product?.description}</div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-right">{item.quantity}</td>
+                            <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
+                            <td className="px-4 py-2 text-right">{item.taxrate}%</td>
+                            <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Tax ID:</span>
-                    <span>{invoice.client?.taxId}</span>
+                  
+                  <div className="mt-4 space-y-2 border-t pt-4 text-right">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Subtotal:</span>
+                      <span>{formatCurrency(invoice.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Tax:</span>
+                      <span>{formatCurrency(invoice.taxTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span>{formatCurrency(invoice.total)}</span>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Address:</span>
-                    <span>{invoice.client?.address}</span>
+                  
+                  <div className="mt-6">
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes</FormLabel>
+                          <FormControl>
+                            <Textarea rows={4} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">City:</span>
-                    <span>{invoice.client?.city}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoice Details</CardTitle>
-                <CardDescription>Information about this document</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Invoice Number:</span>
-                    <span>{invoice.number}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Issue Date:</span>
-                    <span>{invoice.issueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Due Date:</span>
-                    <span>{invoice.dueDate}</span>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <span>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                      </Badge>
-                    </span>
-                  </div>
-                  {invoice.proformaId && (
+                </CardContent>
+              </Card>
+              
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" asChild>
+                  <Link to={`/invoices/final/${invoice.id}`}>Cancel</Link>
+                </Button>
+                <Button type="submit" disabled={updateInvoiceMutation.isPending}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </Form>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Information</CardTitle>
+                  <CardDescription>Client details for this invoice</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
                     <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">From Proforma:</span>
+                      <span className="text-sm text-muted-foreground">Name:</span>
+                      <span>{invoice.client?.name}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Tax ID:</span>
+                      <span>{invoice.client?.taxId}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Address:</span>
+                      <span>{invoice.client?.address}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">City:</span>
+                      <span>{invoice.client?.city}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invoice Details</CardTitle>
+                  <CardDescription>Information about this document</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Invoice Number:</span>
+                      <span>{invoice.number}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Issue Date:</span>
+                      <span>{invoice.issueDate}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Due Date:</span>
+                      <span>{invoice.dueDate}</span>
+                    </div>
+                    <div className="grid grid-cols-2">
+                      <span className="text-sm text-muted-foreground">Status:</span>
                       <span>
-                        <Link to={`/invoices/proforma/${invoice.proformaId}`} className="text-primary hover:underline">
-                          P-{invoice.proformaId.padStart(4, '0')}
-                        </Link>
+                        <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </Badge>
                       </span>
                     </div>
-                  )}
+                    {invoice.proformaId && (
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">From Proforma:</span>
+                        <span>
+                          <Link to={`/invoices/proforma/${invoice.proformaId}`} className="text-primary hover:underline">
+                            P-{invoice.proformaId.padStart(4, '0')}
+                          </Link>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Items</CardTitle>
+                <CardDescription>Products and services in this invoice</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-hidden rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-4 py-2 text-left">Product</th>
+                        <th className="px-4 py-2 text-right">Qty</th>
+                        <th className="px-4 py-2 text-right">Unit Price</th>
+                        <th className="px-4 py-2 text-right">Tax</th>
+                        <th className="px-4 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoice.items.map((item) => (
+                        <tr key={item.id} className="border-b">
+                          <td className="px-4 py-2">
+                            <div>
+                              <div className="font-medium">{item.product?.name}</div>
+                              <div className="text-xs text-muted-foreground">{item.product?.description}</div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right">{item.quantity}</td>
+                          <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
+                          <td className="px-4 py-2 text-right">{item.taxrate}%</td>
+                          <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                
+                <div className="mt-4 space-y-2 border-t pt-4 text-right">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Subtotal:</span>
+                    <span>{formatCurrency(invoice.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Tax:</span>
+                    <span>{formatCurrency(invoice.taxTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(invoice.total)}</span>
+                  </div>
+                </div>
+                
+                {invoice.notes && (
+                  <div className="mt-6 rounded-md border p-4">
+                    <h4 className="mb-2 font-medium">Notes</h4>
+                    <p className="text-sm">{invoice.notes}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Items</CardTitle>
-              <CardDescription>Products and services in this invoice</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-hidden rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-2 text-left">Product</th>
-                      <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Unit Price</th>
-                      <th className="px-4 py-2 text-right">Tax</th>
-                      <th className="px-4 py-2 text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.items.map((item) => (
-                      <tr key={item.id} className="border-b">
-                        <td className="px-4 py-2">
-                          <div>
-                            <div className="font-medium">{item.product?.name}</div>
-                            <div className="text-xs text-muted-foreground">{item.product?.description}</div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-right">{item.quantity}</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
-                        <td className="px-4 py-2 text-right">{item.taxrate}%</td>
-                        <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              <div className="mt-4 space-y-2 border-t pt-4 text-right">
-                <div className="flex justify-between">
-                  <span className="font-medium">Subtotal:</span>
-                  <span>{formatCurrency(invoice.subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Tax:</span>
-                  <span>{formatCurrency(invoice.taxTotal)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total:</span>
-                  <span>{formatCurrency(invoice.total)}</span>
-                </div>
-              </div>
-              
-              {invoice.notes && (
-                <div className="mt-6 rounded-md border p-4">
-                  <h4 className="mb-2 font-medium">Notes</h4>
-                  <p className="text-sm">{invoice.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleExportPDF}>
-              <Printer className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
             
-            <Button asChild variant="outline">
-              <Link to={`/invoices/final/edit/${invoice.id}`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Invoice
-              </Link>
-            </Button>
-            
-            {['unpaid', 'paid'].includes(invoice.status) && (
-              <Button asChild>
-                <Link to={`/delivery-notes/new?invoiceId=${invoice.id}`}>
-                  <Truck className="mr-2 h-4 w-4" />
-                  Create Delivery Note
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleExportPDF}>
+                <Printer className="mr-2 h-4 w-4" />
+                Export PDF
+              </Button>
+              
+              <Button asChild variant="outline">
+                <Link to={`/invoices/final/edit/${invoice.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Invoice
                 </Link>
               </Button>
-            )}
-            
-            {invoice.status === 'unpaid' && (
-              <Button onClick={handleMarkAsPaid}>
-                <Check className="mr-2 h-4 w-4" />
-                Mark as Paid
-              </Button>
-            )}
-          </div>
-        </>
+              
+              {['unpaid', 'paid'].includes(invoice.status) && (
+                <Button asChild>
+                  <Link to={`/delivery-notes/new?invoiceId=${invoice.id}`}>
+                    <Truck className="mr-2 h-4 w-4" />
+                    Create Delivery Note
+                  </Link>
+                </Button>
+              )}
+              
+              {invoice.status === 'unpaid' && (
+                <Button onClick={handleMarkAsPaid}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Mark as Paid
+                </Button>
+              )}
+            </div>
+          </>
+        )
       ) : isNewInvoice ? (
         <Card>
           <CardHeader>
