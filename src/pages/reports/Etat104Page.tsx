@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -26,7 +25,9 @@ import {
 } from '@/components/ui/table';
 import { mockDataService } from '@/services/mockDataService';
 import { FinalInvoice, Client } from '@/types';
-import { FileSpreadsheet, Download } from 'lucide-react';
+import { FileSpreadsheet, FilePdf, Download } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { exportEtat104ToPDF, exportEtat104ToExcel } from '@/utils/exportUtils';
 
 interface ClientSummary {
   clientId: string;
@@ -41,13 +42,11 @@ const Etat104Page = () => {
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   
-  // Fetch invoices
   const { data: finalInvoices = [], isLoading } = useQuery({
     queryKey: ['finalInvoices'],
     queryFn: () => mockDataService.getFinalInvoices(),
   });
   
-  // Filter invoices for the selected period (demo only)
   const filteredInvoices = finalInvoices.filter(invoice => {
     const invoiceDate = new Date(invoice.issueDate);
     return (
@@ -56,7 +55,6 @@ const Etat104Page = () => {
     );
   });
   
-  // Group invoices by client and calculate totals
   const clientSummaries: ClientSummary[] = React.useMemo(() => {
     const summaryMap = new Map<string, ClientSummary>();
     
@@ -88,12 +86,10 @@ const Etat104Page = () => {
     return Array.from(summaryMap.values());
   }, [filteredInvoices]);
   
-  // Calculate overall totals
   const totalAmount = clientSummaries.reduce((sum, client) => sum + client.subtotal, 0);
   const totalTax = clientSummaries.reduce((sum, client) => sum + client.taxTotal, 0);
   const grandTotal = clientSummaries.reduce((sum, client) => sum + client.total, 0);
   
-  // Format currency
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('fr-DZ', { 
       style: 'currency', 
@@ -102,13 +98,58 @@ const Etat104Page = () => {
     });
   };
   
-  // Export functions (demo only)
   const exportToPDF = () => {
-    alert('PDF Export functionality would be implemented here');
+    try {
+      const result = exportEtat104ToPDF(
+        clientSummaries,
+        year,
+        month,
+        totalAmount,
+        totalTax,
+        grandTotal
+      );
+      
+      if (result) {
+        toast({
+          title: 'PDF Generated',
+          description: 'État 104 report has been exported to PDF'
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Failed to generate PDF. Please try again.'
+      });
+    }
   };
   
   const exportToExcel = () => {
-    alert('Excel Export functionality would be implemented here');
+    try {
+      const result = exportEtat104ToExcel(
+        clientSummaries,
+        year,
+        month,
+        totalAmount,
+        totalTax,
+        grandTotal
+      );
+      
+      if (result) {
+        toast({
+          title: 'Excel Generated',
+          description: 'État 104 report has been exported to Excel'
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Failed to generate Excel file. Please try again.'
+      });
+    }
   };
 
   return (
@@ -122,7 +163,7 @@ const Etat104Page = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportToPDF}>
-            <Download className="mr-2 h-4 w-4" />
+            <FilePdf className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
           <Button variant="outline" onClick={exportToExcel}>
@@ -224,7 +265,6 @@ const Etat104Page = () => {
                       </TableRow>
                     ))}
                     
-                    {/* Summary row */}
                     <TableRow className="font-medium">
                       <TableCell colSpan={2} className="text-right">
                         TOTALS:

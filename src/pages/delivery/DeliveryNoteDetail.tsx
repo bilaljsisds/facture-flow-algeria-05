@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,13 +11,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Truck, User } from 'lucide-react';
+import { ArrowLeft, FileText, Truck, User, Printer } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { exportDeliveryNoteToPDF } from '@/utils/exportUtils';
 
 const DeliveryNoteDetail = () => {
   const { id } = useParams();
   const isNewNote = id === 'new';
   
-  // Fetch delivery note data if not new
   const { 
     data: deliveryNotes = [],
     isLoading 
@@ -28,10 +28,8 @@ const DeliveryNoteDetail = () => {
     enabled: !isNewNote,
   });
   
-  // Find the specific delivery note
   const deliveryNote = isNewNote ? null : deliveryNotes.find(n => n.id === id);
   
-  // Format currency
   const formatCurrency = (amount?: number) => {
     if (amount === undefined) return '';
     return amount.toLocaleString('fr-DZ', { 
@@ -41,7 +39,6 @@ const DeliveryNoteDetail = () => {
     });
   };
   
-  // Get status badge variant
   const getStatusBadgeVariant = (status?: string) => {
     if (!status) return 'outline';
     switch (status) {
@@ -56,7 +53,6 @@ const DeliveryNoteDetail = () => {
     }
   };
 
-  // Loading state
   if (!isNewNote && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -64,6 +60,27 @@ const DeliveryNoteDetail = () => {
       </div>
     );
   }
+
+  const handlePrintDeliveryNote = () => {
+    if (!deliveryNote) return;
+    
+    try {
+      const result = exportDeliveryNoteToPDF(deliveryNote);
+      if (result) {
+        toast({
+          title: 'PDF Generated',
+          description: 'Delivery note has been exported to PDF'
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Failed to generate PDF. Please try again.'
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -242,8 +259,8 @@ const DeliveryNoteDetail = () => {
           </Card>
           
           <div className="flex justify-end gap-2">
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={handlePrintDeliveryNote}>
+              <Printer className="mr-2 h-4 w-4" />
               Print Delivery Note
             </Button>
             

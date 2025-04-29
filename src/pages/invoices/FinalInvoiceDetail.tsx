@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,13 +11,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Truck } from 'lucide-react';
+import { ArrowLeft, Truck, FilePdf } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
 
 const FinalInvoiceDetail = () => {
   const { id } = useParams();
   const isNewInvoice = id === 'new';
   
-  // Fetch invoice data if not new
   const { 
     data: invoices = [],
     isLoading 
@@ -28,10 +28,8 @@ const FinalInvoiceDetail = () => {
     enabled: !isNewInvoice,
   });
   
-  // Find the specific invoice
   const invoice = isNewInvoice ? null : invoices.find(i => i.id === id);
   
-  // Format currency
   const formatCurrency = (amount?: number) => {
     if (amount === undefined) return '';
     return amount.toLocaleString('fr-DZ', { 
@@ -41,7 +39,6 @@ const FinalInvoiceDetail = () => {
     });
   };
   
-  // Get status badge variant
   const getStatusBadgeVariant = (status?: string) => {
     if (!status) return 'outline';
     switch (status) {
@@ -58,7 +55,27 @@ const FinalInvoiceDetail = () => {
     }
   };
 
-  // Loading state
+  const handleExportPDF = () => {
+    if (!invoice) return;
+    
+    try {
+      const result = exportFinalInvoiceToPDF(invoice);
+      if (result) {
+        toast({
+          title: 'PDF Generated',
+          description: 'Invoice has been exported to PDF'
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Failed to generate PDF. Please try again.'
+      });
+    }
+  };
+
   if (!isNewInvoice && isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -222,8 +239,8 @@ const FinalInvoiceDetail = () => {
           </Card>
           
           <div className="flex justify-end gap-2">
-            <Button variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={handleExportPDF}>
+              <FilePdf className="mr-2 h-4 w-4" />
               Export PDF
             </Button>
             
@@ -258,7 +275,7 @@ const FinalInvoiceDetail = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <FileText className="h-10 w-10 text-muted-foreground/50" />
+              <FilePdf className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
                 Invoice not found
               </p>

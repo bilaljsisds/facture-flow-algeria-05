@@ -42,10 +42,12 @@ import {
   ThumbsDown,
   ThumbsUp,
   CreditCard,
-  Banknote
+  Banknote,
+  FilePdf,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
+import { exportProformaInvoiceToPDF } from '@/utils/exportUtils';
 
 const ProformaDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -114,6 +116,27 @@ const ProformaDetail = () => {
   const handleConvertToFinal = () => {
     if (!id) return;
     convertMutation.mutate();
+  };
+
+  const handleExportPDF = () => {
+    if (!proforma) return;
+    
+    try {
+      const result = exportProformaInvoiceToPDF(proforma);
+      if (result) {
+        toast({
+          title: 'PDF Generated',
+          description: 'Proforma invoice has been exported to PDF'
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Export Failed',
+        description: 'Failed to generate PDF. Please try again.'
+      });
+    }
   };
 
   if (isLoading) {
@@ -437,8 +460,8 @@ const ProformaDetail = () => {
             </Button>
           )}
 
-          <Button variant="outline">
-            <File className="mr-2 h-4 w-4" />
+          <Button variant="outline" onClick={handleExportPDF}>
+            <FilePdf className="mr-2 h-4 w-4" />
             Print / Download
           </Button>
         </CardContent>
