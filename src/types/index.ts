@@ -1,3 +1,4 @@
+
 // Base types for our domain models
 
 export interface Client {
@@ -57,6 +58,8 @@ export interface BaseInvoice {
 export interface ProformaInvoice extends BaseInvoice {
   status: 'draft' | 'sent' | 'approved' | 'rejected';
   finalInvoiceId?: string; // If approved and converted to final invoice
+  payment_type?: string; // 'cheque' or 'cash'
+  stamp_tax?: number; // For cash payment tax
 }
 
 export interface FinalInvoice extends BaseInvoice {
@@ -80,6 +83,9 @@ export interface DeliveryNote {
   status: 'pending' | 'delivered' | 'cancelled';
   createdAt: string;
   updatedAt: string;
+  driver_name?: string;
+  truck_id?: string;
+  delivery_company?: string;
 }
 
 // User related types

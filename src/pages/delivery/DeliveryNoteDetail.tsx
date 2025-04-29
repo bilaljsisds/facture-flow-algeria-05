@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Truck, Driver } from 'lucide-react';
+import { ArrowLeft, FileText, Truck, User } from 'lucide-react';
 
 const DeliveryNoteDetail = () => {
   const { id } = useParams();
@@ -169,7 +169,7 @@ const DeliveryNoteDetail = () => {
                 {deliveryNote.driver_name && (
                   <div className="grid grid-cols-2">
                     <span className="text-sm text-muted-foreground flex items-center">
-                      <Driver className="mr-2 h-4 w-4" />
+                      <User className="mr-2 h-4 w-4" />
                       Driver:
                     </span>
                     <span>{deliveryNote.driver_name}</span>

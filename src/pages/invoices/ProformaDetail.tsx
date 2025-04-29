@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -42,8 +41,8 @@ import {
   Send,
   ThumbsDown,
   ThumbsUp,
-  Cheque,
-  Cash
+  CreditCard,
+  Banknote
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -62,7 +61,6 @@ const ProformaDetail = () => {
     enabled: !!id,
   });
 
-  // Update proforma status mutation
   const statusUpdateMutation = useMutation({
     mutationFn: (status: 'draft' | 'sent' | 'approved' | 'rejected') => {
       return mockDataService.updateProformaStatus(id, status);
@@ -84,7 +82,6 @@ const ProformaDetail = () => {
     }
   });
 
-  // Convert to final invoice mutation
   const convertMutation = useMutation({
     mutationFn: () => {
       return mockDataService.convertProformaToFinal(id);
@@ -95,7 +92,6 @@ const ProformaDetail = () => {
         title: 'Proforma Converted',
         description: 'Successfully converted to final invoice'
       });
-      // If finalInvoiceId is available, navigate to it
       if (data.proforma && data.proforma.finalInvoiceId) {
         navigate(`/invoices/final/${data.proforma.finalInvoiceId}`);
       }
@@ -169,9 +165,9 @@ const ProformaDetail = () => {
 
   const getPaymentTypeIcon = (paymentType: string) => {
     if (paymentType === 'cash') {
-      return <Cash className="h-4 w-4 text-green-600 mr-2" />;
+      return <Banknote className="h-4 w-4 text-green-600 mr-2" />;
     }
-    return <Cheque className="h-4 w-4 text-blue-600 mr-2" />;
+    return <CreditCard className="h-4 w-4 text-blue-600 mr-2" />;
   };
 
   return (
@@ -194,81 +190,79 @@ const ProformaDetail = () => {
         </Badge>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div>
-              <strong className="font-semibold">Name:</strong>{" "}
-              {proforma.client?.name}
-            </div>
-            <div>
-              <strong className="font-semibold">Tax ID:</strong>{" "}
-              {proforma.client?.taxId}
-            </div>
-            <div>
-              <strong className="font-semibold">Address:</strong>{" "}
-              {proforma.client?.address}
-            </div>
-            <div>
-              <strong className="font-semibold">City:</strong>{" "}
-              {proforma.client?.city}, {proforma.client?.country}
-            </div>
-            <div>
-              <strong className="font-semibold">Contact:</strong>{" "}
-              {proforma.client?.phone} | {proforma.client?.email}
-            </div>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Client Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div>
+            <strong className="font-semibold">Name:</strong>{" "}
+            {proforma.client?.name}
+          </div>
+          <div>
+            <strong className="font-semibold">Tax ID:</strong>{" "}
+            {proforma.client?.taxId}
+          </div>
+          <div>
+            <strong className="font-semibold">Address:</strong>{" "}
+            {proforma.client?.address}
+          </div>
+          <div>
+            <strong className="font-semibold">City:</strong>{" "}
+            {proforma.client?.city}, {proforma.client?.country}
+          </div>
+          <div>
+            <strong className="font-semibold">Contact:</strong>{" "}
+            {proforma.client?.phone} | {proforma.client?.email}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Invoice Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoice Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div>
+            <strong className="font-semibold">Invoice Number:</strong>{" "}
+            {proforma.number}
+          </div>
+          <div>
+            <strong className="font-semibold">Issue Date:</strong>{" "}
+            {formatDate(proforma.issueDate)}
+          </div>
+          <div>
+            <strong className="font-semibold">Due Date:</strong>{" "}
+            {formatDate(proforma.dueDate)}
+          </div>
+          <div>
+            <strong className="font-semibold">Status:</strong>{" "}
+            <Badge
+              className={`${statusColor[proforma.status]} text-white px-2 py-0.5 text-xs font-medium`}
+            >
+              {proforma.status}
+            </Badge>
+          </div>
+          <div>
+            <strong className="font-semibold">Payment Method:</strong>{" "}
+            <span className="flex items-center">
+              {getPaymentTypeIcon(proforma.payment_type || 'cheque')}
+              {proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}
+            </span>
+          </div>
+          {proforma.finalInvoiceId && (
             <div>
-              <strong className="font-semibold">Invoice Number:</strong>{" "}
-              {proforma.number}
-            </div>
-            <div>
-              <strong className="font-semibold">Issue Date:</strong>{" "}
-              {formatDate(proforma.issueDate)}
-            </div>
-            <div>
-              <strong className="font-semibold">Due Date:</strong>{" "}
-              {formatDate(proforma.dueDate)}
-            </div>
-            <div>
-              <strong className="font-semibold">Status:</strong>{" "}
-              <Badge
-                className={`${statusColor[proforma.status]} text-white px-2 py-0.5 text-xs font-medium`}
+              <strong className="font-semibold">Final Invoice:</strong>{" "}
+              <Link
+                to={`/invoices/final/${proforma.finalInvoiceId}`}
+                className="text-primary hover:underline"
               >
-                {proforma.status}
-              </Badge>
+                View Final Invoice
+              </Link>
             </div>
-            <div>
-              <strong className="font-semibold">Payment Method:</strong>{" "}
-              <span className="flex items-center">
-                {getPaymentTypeIcon(proforma.payment_type || 'cheque')}
-                {proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}
-              </span>
-            </div>
-            {proforma.finalInvoiceId && (
-              <div>
-                <strong className="font-semibold">Final Invoice:</strong>{" "}
-                <Link
-                  to={`/invoices/final/${proforma.finalInvoiceId}`}
-                  className="text-primary hover:underline"
-                >
-                  View Final Invoice
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -363,7 +357,6 @@ const ProformaDetail = () => {
           <CardDescription>Manage this proforma invoice</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          {/* Send to Client (mark as sent) */}
           {proforma.status === 'draft' && (
             <Button
               variant="outline"
@@ -375,7 +368,6 @@ const ProformaDetail = () => {
             </Button>
           )}
 
-          {/* Approve */}
           {proforma.status === 'sent' && canApprove && (
             <Button
               variant="outline"
@@ -388,7 +380,6 @@ const ProformaDetail = () => {
             </Button>
           )}
 
-          {/* Reject */}
           {proforma.status === 'sent' && canApprove && (
             <Button
               variant="outline"
@@ -401,7 +392,6 @@ const ProformaDetail = () => {
             </Button>
           )}
 
-          {/* Convert to Final Invoice */}
           {proforma.status === 'approved' && !proforma.finalInvoiceId && canConvert && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -438,7 +428,6 @@ const ProformaDetail = () => {
             </AlertDialog>
           )}
 
-          {/* View Final Invoice */}
           {proforma.finalInvoiceId && (
             <Button asChild variant="default">
               <Link to={`/invoices/final/${proforma.finalInvoiceId}`}>
@@ -448,7 +437,6 @@ const ProformaDetail = () => {
             </Button>
           )}
 
-          {/* Print / Download */}
           <Button variant="outline">
             <File className="mr-2 h-4 w-4" />
             Print / Download

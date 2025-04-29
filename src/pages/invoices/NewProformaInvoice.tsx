@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -34,8 +33,8 @@ import {
   Plus, 
   Save, 
   X,
-  Cheque,
-  Cash 
+  CreditCard,
+  Banknote 
 } from 'lucide-react';
 import { 
   Table,
@@ -55,7 +54,6 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getCurrentDate, getFutureDate, generateId } from '@/types';
 
-// Form validation schema
 const proformaSchema = z.object({
   clientId: z.string().min(1, 'Client is required'),
   issueDate: z.string().min(1, 'Issue date is required'),
@@ -95,13 +93,11 @@ const NewProformaInvoice = () => {
     total: 0 
   });
   
-  // Get all clients
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => mockDataService.getClients(),
   });
   
-  // Get all products
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => mockDataService.getProducts(),
@@ -112,7 +108,7 @@ const NewProformaInvoice = () => {
     defaultValues: {
       clientId: '',
       issueDate: getCurrentDate(),
-      dueDate: getFutureDate(30), // 30 days from now
+      dueDate: getFutureDate(30),
       notes: '',
       paymentType: 'cheque',
       items: [
@@ -128,7 +124,6 @@ const NewProformaInvoice = () => {
     }
   });
 
-  // Calculate stamp tax based on payment type and subtotal
   const calculateStampTax = (paymentType: string, subtotal: number) => {
     if (paymentType !== "cash") return 0;
 
@@ -143,7 +138,6 @@ const NewProformaInvoice = () => {
     }
   };
 
-  // Calculate totals whenever items change or payment type changes
   React.useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name?.startsWith('items') || name === 'items' || name === 'paymentType') {
@@ -154,7 +148,6 @@ const NewProformaInvoice = () => {
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
-  // Calculate invoice totals
   const calculateTotals = () => {
     const items = form.getValues('items') || [];
     const paymentType = form.getValues('paymentType');
@@ -183,7 +176,6 @@ const NewProformaInvoice = () => {
     setTotals({ subtotal, taxTotal, stampTax, total });
   };
 
-  // Add item to the form
   const addItem = () => {
     const currentItems = form.getValues('items') || [];
     form.setValue('items', [
@@ -199,14 +191,12 @@ const NewProformaInvoice = () => {
     ]);
   };
 
-  // Remove item from the form
   const removeItem = (index: number) => {
     const currentItems = [...form.getValues('items')];
     currentItems.splice(index, 1);
     form.setValue('items', currentItems);
   };
 
-  // Update item product
   const updateItemProduct = (index: number, productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
@@ -222,7 +212,6 @@ const NewProformaInvoice = () => {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('fr-DZ', { 
       style: 'currency', 
@@ -231,10 +220,8 @@ const NewProformaInvoice = () => {
     });
   };
 
-  // Create proforma invoice
   const createMutation = useMutation({
     mutationFn: async (data: ProformaFormValues) => {
-      // Calculate item totals
       const items = data.items.map(item => {
         const quantity = item.quantity || 0;
         const unitprice = item.unitprice || 0;
@@ -259,13 +246,11 @@ const NewProformaInvoice = () => {
         };
       });
       
-      // Calculate invoice totals
       const subtotal = items.reduce((sum, item) => sum + item.totalExcl, 0);
       const taxTotal = items.reduce((sum, item) => sum + item.totalTax, 0);
       const stampTax = calculateStampTax(data.paymentType, subtotal);
       const total = subtotal + taxTotal + stampTax;
       
-      // Format proforma for API
       const proforma = {
         clientId: data.clientId,
         client: clients.find(c => c.id === data.clientId),
@@ -438,7 +423,7 @@ const NewProformaInvoice = () => {
                             <RadioGroupItem value="cheque" />
                           </FormControl>
                           <FormLabel className="flex items-center">
-                            <Cheque className="mr-2 h-4 w-4" />
+                            <CreditCard className="mr-2 h-4 w-4" />
                             Cheque
                           </FormLabel>
                         </FormItem>
@@ -447,7 +432,7 @@ const NewProformaInvoice = () => {
                             <RadioGroupItem value="cash" />
                           </FormControl>
                           <FormLabel className="flex items-center">
-                            <Cash className="mr-2 h-4 w-4" />
+                            <Banknote className="mr-2 h-4 w-4" />
                             Cash
                           </FormLabel>
                         </FormItem>

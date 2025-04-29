@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,7 +34,7 @@ import {
   Save, 
   X,
   Truck,
-  Driver 
+  User 
 } from 'lucide-react';
 import { 
   Table,
@@ -55,7 +54,6 @@ import {
 import { getCurrentDate, generateId } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-// Form validation schema
 const deliveryNoteSchema = z.object({
   clientId: z.string().min(1, 'Client is required'),
   issueDate: z.string().min(1, 'Issue date is required'),
@@ -88,23 +86,19 @@ const NewDeliveryNote = () => {
   const { checkPermission } = useAuth();
   const canCreate = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.SALESPERSON]);
   
-  // Get invoice ID from URL query parameter
   const queryParams = new URLSearchParams(location.search);
   const invoiceId = queryParams.get('invoiceId');
   
-  // Get all clients
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => mockDataService.getClients(),
   });
   
-  // Get all products
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
     queryFn: () => mockDataService.getProducts(),
   });
 
-  // Get invoice if provided
   const { data: invoice, isLoading: invoiceLoading } = useQuery({
     queryKey: ['finalInvoice', invoiceId],
     queryFn: () => mockDataService.getFinalInvoiceById(invoiceId!),
@@ -130,7 +124,6 @@ const NewDeliveryNote = () => {
     }
   });
 
-  // Set values from invoice if available
   useEffect(() => {
     if (invoice) {
       form.setValue('clientId', invoice.clientId);
@@ -148,7 +141,6 @@ const NewDeliveryNote = () => {
     }
   }, [invoice, form]);
 
-  // Add item to the form
   const addItem = () => {
     const currentItems = form.getValues('items') || [];
     form.setValue('items', [
@@ -161,14 +153,12 @@ const NewDeliveryNote = () => {
     ]);
   };
 
-  // Remove item from the form
   const removeItem = (index: number) => {
     const currentItems = [...form.getValues('items')];
     currentItems.splice(index, 1);
     form.setValue('items', currentItems);
   };
 
-  // Update item product
   const updateItemProduct = (index: number, productId: string) => {
     const product = products.find(p => p.id === productId);
     const items = [...form.getValues('items')];
@@ -177,10 +167,8 @@ const NewDeliveryNote = () => {
     form.setValue('items', items);
   };
 
-  // Create delivery note
   const createMutation = useMutation({
     mutationFn: async (data: DeliveryNoteFormValues) => {
-      // Format data for API
       const deliveryNote = {
         clientId: data.clientId,
         finalInvoiceId: invoiceId || undefined,
@@ -338,7 +326,7 @@ const NewDeliveryNote = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <Driver className="mr-2 h-4 w-4" />
+                        <User className="mr-2 h-4 w-4" />
                         Driver Name
                       </FormLabel>
                       <FormControl>
