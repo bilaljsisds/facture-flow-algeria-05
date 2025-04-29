@@ -25,8 +25,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { mockDataService } from '@/services/mockDataService';
-import { FinalInvoice } from '@/types';
+import { FinalInvoice, Client } from '@/types';
 import { FileSpreadsheet, Download } from 'lucide-react';
+
+interface ClientSummary {
+  clientId: string;
+  clientName: string;
+  taxId: string;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+}
 
 const Etat104Page = () => {
   const [year, setYear] = useState(new Date().getFullYear().toString());
@@ -47,10 +56,42 @@ const Etat104Page = () => {
     );
   });
   
-  // Calculate totals
-  const totalAmount = filteredInvoices.reduce((sum, invoice) => sum + invoice.subtotal, 0);
-  const totalTax = filteredInvoices.reduce((sum, invoice) => sum + invoice.taxTotal, 0);
-  const grandTotal = filteredInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  // Group invoices by client and calculate totals
+  const clientSummaries: ClientSummary[] = React.useMemo(() => {
+    const summaryMap = new Map<string, ClientSummary>();
+    
+    filteredInvoices.forEach(invoice => {
+      if (!invoice.client) return;
+      
+      const clientId = invoice.client.id;
+      
+      if (summaryMap.has(clientId)) {
+        const existing = summaryMap.get(clientId)!;
+        summaryMap.set(clientId, {
+          ...existing,
+          subtotal: existing.subtotal + invoice.subtotal,
+          taxTotal: existing.taxTotal + invoice.taxTotal,
+          total: existing.total + invoice.total,
+        });
+      } else {
+        summaryMap.set(clientId, {
+          clientId,
+          clientName: invoice.client.name,
+          taxId: invoice.client.taxId,
+          subtotal: invoice.subtotal,
+          taxTotal: invoice.taxTotal,
+          total: invoice.total,
+        });
+      }
+    });
+    
+    return Array.from(summaryMap.values());
+  }, [filteredInvoices]);
+  
+  // Calculate overall totals
+  const totalAmount = clientSummaries.reduce((sum, client) => sum + client.subtotal, 0);
+  const totalTax = clientSummaries.reduce((sum, client) => sum + client.taxTotal, 0);
+  const grandTotal = clientSummaries.reduce((sum, client) => sum + client.total, 0);
   
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -152,7 +193,7 @@ const Etat104Page = () => {
             <div className="flex h-40 items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
-          ) : filteredInvoices.length === 0 ? (
+          ) : clientSummaries.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center gap-2">
               <FileSpreadsheet className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
@@ -165,8 +206,6 @@ const Etat104Page = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Date</TableHead>
                       <TableHead>Client</TableHead>
                       <TableHead>NIF</TableHead>
                       <TableHead className="text-right">Amount (Excl.)</TableHead>
@@ -175,21 +214,19 @@ const Etat104Page = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInvoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-mono">{invoice.number}</TableCell>
-                        <TableCell>{invoice.issueDate}</TableCell>
-                        <TableCell>{invoice.client?.name}</TableCell>
-                        <TableCell>{invoice.client?.taxId}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(invoice.subtotal)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(invoice.taxTotal)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(invoice.total)}</TableCell>
+                    {clientSummaries.map((summary) => (
+                      <TableRow key={summary.clientId}>
+                        <TableCell>{summary.clientName}</TableCell>
+                        <TableCell>{summary.taxId}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(summary.subtotal)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(summary.taxTotal)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(summary.total)}</TableCell>
                       </TableRow>
                     ))}
                     
                     {/* Summary row */}
                     <TableRow className="font-medium">
-                      <TableCell colSpan={4} className="text-right">
+                      <TableCell colSpan={2} className="text-right">
                         TOTALS:
                       </TableCell>
                       <TableCell className="text-right">{formatCurrency(totalAmount)}</TableCell>
