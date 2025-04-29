@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,7 +44,8 @@ import {
   ThumbsUp,
   CreditCard,
   Banknote,
-  printer,
+  Printer,
+  Edit,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
@@ -56,6 +58,7 @@ const ProformaDetail = () => {
   const { checkPermission } = useAuth();
   const canApprove = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const canConvert = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
+  const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
 
   const { data: proforma, isLoading } = useQuery({
     queryKey: ['proformaInvoice', id],
@@ -380,6 +383,15 @@ const ProformaDetail = () => {
           <CardDescription>Manage this proforma invoice</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
+          {canEdit && proforma.status === 'draft' && (
+            <Button asChild variant="outline">
+              <Link to={`/invoices/proforma/edit/${proforma.id}`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Proforma
+              </Link>
+            </Button>
+          )}
+          
           {proforma.status === 'draft' && (
             <Button
               variant="outline"
@@ -461,7 +473,7 @@ const ProformaDetail = () => {
           )}
 
           <Button variant="outline" onClick={handleExportPDF}>
-            <printer className="mr-2 h-4 w-4" />
+            <Printer className="mr-2 h-4 w-4" />
             Print / Download
           </Button>
         </CardContent>

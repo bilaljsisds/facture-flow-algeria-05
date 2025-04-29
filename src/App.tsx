@@ -58,13 +58,16 @@ const App = () => (
               <Route path="/invoices/proforma" element={<ProformaInvoicesPage />} />
               <Route path="/invoices/proforma/:id" element={<ProformaDetail />} />
               <Route path="/invoices/proforma/new" element={<NewProformaInvoice />} />
+              <Route path="/invoices/proforma/edit/:id" element={<ProformaDetail />} />
               
               <Route path="/invoices/final" element={<FinalInvoicesPage />} />
               <Route path="/invoices/final/:id" element={<FinalInvoiceDetail />} />
+              <Route path="/invoices/final/edit/:id" element={<FinalInvoiceDetail />} />
               
               <Route path="/delivery-notes" element={<DeliveryNotesPage />} />
               <Route path="/delivery-notes/:id" element={<DeliveryNoteDetail />} />
               <Route path="/delivery-notes/new" element={<NewDeliveryNote />} />
+              <Route path="/delivery-notes/edit/:id" element={<DeliveryNoteDetail />} />
               
               <Route path="/reports/etat104" element={<Etat104Page />} />
               

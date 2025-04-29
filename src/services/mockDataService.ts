@@ -1,151 +1,104 @@
-
 import { supabase, beginTransaction, commitTransaction, rollbackTransaction } from '@/integrations/supabase/client';
 import { 
   Client, 
   Product, 
   ProformaInvoice, 
   FinalInvoice, 
-  DeliveryNote, 
-  generateId 
+  DeliveryNote 
 } from '@/types';
 
-// Real database implementation using Supabase
-export const mockDataService = {
-  // Clients
-  getClients: async (): Promise<Client[]> => {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*');
-    
-    if (error) {
+class MockDataService {
+  // Client methods
+  async getClients(): Promise<Client[]> {
+    try {
+      // Here we would connect to the API
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*');
+      
+      if (error) throw error;
+      
+      return data as Client[];
+    } catch (error) {
       console.error('Error fetching clients:', error);
-      throw error;
+      return [];
     }
-    
-    return data.map(client => ({
-      id: client.id,
-      name: client.name,
-      address: client.address,
-      taxId: client.taxid,
-      phone: client.phone,
-      email: client.email,
-      country: client.country,
-      city: client.city,
-      createdAt: client.createdat || new Date().toISOString(),
-      updatedAt: client.updatedat || new Date().toISOString()
-    }));
-  },
-  
-  getClientById: async (id: string): Promise<Client> => {
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error(`Error fetching client ${id}:`, error);
-      throw error;
+  }
+
+  async getClientById(id: string): Promise<Client | null> {
+    try {
+      // Find client by ID
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      return data as Client;
+    } catch (error) {
+      console.error('Error fetching client by ID:', error);
+      return null;
     }
-    
-    return {
-      id: data.id,
-      name: data.name,
-      address: data.address,
-      taxId: data.taxid,
-      phone: data.phone,
-      email: data.email,
-      country: data.country,
-      city: data.city,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
-    };
-  },
-  
-  createClient: async (client: Omit<Client, "id" | "createdAt" | "updatedAt">): Promise<Client> => {
-    const { data, error } = await supabase
-      .from('clients')
-      .insert({
-        name: client.name,
-        address: client.address,
-        taxid: client.taxId,
-        phone: client.phone,
-        email: client.email,
-        country: client.country,
-        city: client.city
-      })
-      .select()
-      .single();
-    
-    if (error) {
+  }
+
+  async createClient(clientData: Partial<Client>): Promise<Client | null> {
+    try {
+      // Add new client
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([clientData])
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      return data as Client;
+    } catch (error) {
       console.error('Error creating client:', error);
-      throw error;
+      return null;
     }
-    
-    return {
-      id: data.id,
-      name: data.name,
-      address: data.address,
-      taxId: data.taxid,
-      phone: data.phone,
-      email: data.email,
-      country: data.country,
-      city: data.city,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
-    };
-  },
-  
-  updateClient: async (id: string, client: Partial<Client>): Promise<Client> => {
-    const updateData: any = {};
-    if (client.name) updateData.name = client.name;
-    if (client.address) updateData.address = client.address;
-    if (client.taxId) updateData.taxid = client.taxId;
-    if (client.phone) updateData.phone = client.phone;
-    if (client.email) updateData.email = client.email;
-    if (client.country) updateData.country = client.country;
-    if (client.city) updateData.city = client.city;
-    
-    const { data, error } = await supabase
-      .from('clients')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error(`Error updating client ${id}:`, error);
-      throw error;
+  }
+
+  async updateClient(id: string, clientData: Partial<Client>): Promise<Client | null> {
+    try {
+      // Update existing client
+      const { data, error } = await supabase
+        .from('clients')
+        .update(clientData)
+        .eq('id', id)
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      return data as Client;
+    } catch (error) {
+      console.error('Error updating client:', error);
+      return null;
     }
-    
-    return {
-      id: data.id,
-      name: data.name,
-      address: data.address,
-      taxId: data.taxid,
-      phone: data.phone,
-      email: data.email,
-      country: data.country,
-      city: data.city,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
-    };
-  },
-  
-  deleteClient: async (id: string): Promise<void> => {
-    const { error } = await supabase
-      .from('clients')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error(`Error deleting client ${id}:`, error);
-      throw error;
+  }
+
+  async deleteClient(id: string): Promise<boolean> {
+    try {
+      // Delete client
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      return false;
     }
-  },
-  
+  }
+
   // Products
-  getProducts: async (): Promise<Product[]> => {
+  async getProducts(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select('*');
@@ -166,9 +119,9 @@ export const mockDataService = {
       createdAt: product.createdat || new Date().toISOString(),
       updatedAt: product.updatedat || new Date().toISOString()
     }));
-  },
-  
-  getProductById: async (id: string): Promise<Product> => {
+  }
+
+  async getProductById(id: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -177,7 +130,7 @@ export const mockDataService = {
     
     if (error) {
       console.error(`Error fetching product ${id}:`, error);
-      throw error;
+      return null;
     }
     
     return {
@@ -191,48 +144,33 @@ export const mockDataService = {
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
-  },
-  
-  createProduct: async (product: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<Product> => {
-    const { data, error } = await supabase
-      .from('products')
-      .insert({
-        code: product.code,
-        name: product.name,
-        description: product.description,
-        unitprice: product.unitprice,
-        taxrate: product.taxrate,
-        stockquantity: product.stockquantity
-      })
-      .select()
-      .single();
-    
-    if (error) {
+  }
+
+  async createProduct(productData: Partial<Product>): Promise<Product | null> {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([productData])
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      return data as Product;
+    } catch (error) {
       console.error('Error creating product:', error);
-      throw error;
+      return null;
     }
-    
-    return {
-      id: data.id,
-      code: data.code,
-      name: data.name,
-      description: data.description,
-      unitprice: data.unitprice,
-      taxrate: data.taxrate,
-      stockquantity: data.stockquantity,
-      createdAt: data.createdat || new Date().toISOString(),
-      updatedAt: data.updatedat || new Date().toISOString()
-    };
-  },
-  
-  updateProduct: async (id: string, product: Partial<Product>): Promise<Product> => {
+  }
+
+  async updateProduct(id: string, productData: Partial<Product>): Promise<Product | null> {
     const updateData: any = {};
-    if (product.code !== undefined) updateData.code = product.code;
-    if (product.name !== undefined) updateData.name = product.name;
-    if (product.description !== undefined) updateData.description = product.description;
-    if (product.unitprice !== undefined) updateData.unitprice = product.unitprice;
-    if (product.taxrate !== undefined) updateData.taxrate = product.taxrate;
-    if (product.stockquantity !== undefined) updateData.stockquantity = product.stockquantity;
+    if (productData.code !== undefined) updateData.code = productData.code;
+    if (productData.name !== undefined) updateData.name = productData.name;
+    if (productData.description !== undefined) updateData.description = productData.description;
+    if (productData.unitprice !== undefined) updateData.unitprice = productData.unitprice;
+    if (productData.taxrate !== undefined) updateData.taxrate = productData.taxrate;
+    if (productData.stockquantity !== undefined) updateData.stockquantity = productData.stockquantity;
     
     const { data, error } = await supabase
       .from('products')
@@ -243,7 +181,7 @@ export const mockDataService = {
     
     if (error) {
       console.error(`Error updating product ${id}:`, error);
-      throw error;
+      return null;
     }
     
     return {
@@ -257,9 +195,9 @@ export const mockDataService = {
       createdAt: data.createdat || new Date().toISOString(),
       updatedAt: data.updatedat || new Date().toISOString()
     };
-  },
+  }
 
-  deleteProduct: async (id: string): Promise<void> => {
+  async deleteProduct(id: string): Promise<boolean> {
     const { error } = await supabase
       .from('products')
       .delete()
@@ -267,12 +205,14 @@ export const mockDataService = {
     
     if (error) {
       console.error(`Error deleting product ${id}:`, error);
-      throw error;
+      return false;
     }
-  },
-  
+    
+    return true;
+  }
+
   // Proforma Invoices
-  getProformaInvoices: async (): Promise<ProformaInvoice[]> => {
+  async getProformaInvoices(): Promise<ProformaInvoice[]> {
     const { data: invoicesData, error: invoicesError } = await supabase
       .from('proforma_invoices')
       .select('*, clients(*)');
@@ -285,7 +225,6 @@ export const mockDataService = {
     const proformas: ProformaInvoice[] = [];
     
     for (const invoice of invoicesData) {
-      // Get items for this invoice
       const { data: itemsJoinData, error: itemsJoinError } = await supabase
         .from('proforma_invoice_items')
         .select('*, invoice_items(*)')
@@ -325,7 +264,7 @@ export const mockDataService = {
         return {
           id: item.id,
           productId: item.productid,
-          product: product,
+          product,
           quantity: item.quantity,
           unitprice: item.unitprice,
           taxrate: item.taxrate,
@@ -369,9 +308,9 @@ export const mockDataService = {
     }
     
     return proformas;
-  },
-  
-  getProformaInvoiceById: async (id: string): Promise<ProformaInvoice> => {
+  }
+
+  async getProformaInvoiceById(id: string): Promise<ProformaInvoice | null> {
     const { data: invoice, error: invoiceError } = await supabase
       .from('proforma_invoices')
       .select('*, clients(*)')
@@ -380,10 +319,9 @@ export const mockDataService = {
     
     if (invoiceError) {
       console.error(`Error fetching proforma invoice ${id}:`, invoiceError);
-      throw invoiceError;
+      return null;
     }
     
-    // Get items for this invoice
     const { data: itemsJoinData, error: itemsJoinError } = await supabase
       .from('proforma_invoice_items')
       .select('*, invoice_items(*)')
@@ -391,7 +329,7 @@ export const mockDataService = {
     
     if (itemsJoinError) {
       console.error(`Error fetching items for proforma invoice ${id}:`, itemsJoinError);
-      throw itemsJoinError;
+      return null;
     }
     
     const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
@@ -464,19 +402,16 @@ export const mockDataService = {
       createdAt: invoice.createdat || new Date().toISOString(),
       updatedAt: invoice.updatedat || new Date().toISOString()
     };
-  },
-  
-  createProformaInvoice: async (proforma: any): Promise<ProformaInvoice> => {
+  }
+
+  async createProformaInvoice(proforma: any): Promise<ProformaInvoice> {
     try {
-      // Start a transaction
       await beginTransaction();
       
       try {
-        // Generate proforma number using database function
         const { data: numberData, error: numberError } = await supabase.rpc('generate_proforma_number');
         if (numberError) throw numberError;
         
-        // Create the proforma invoice
         const { data: createdInvoice, error: invoiceError } = await supabase
           .from('proforma_invoices')
           .insert({
@@ -495,9 +430,7 @@ export const mockDataService = {
         
         if (invoiceError) throw invoiceError;
         
-        // Create invoice items and link them to the proforma
         for (const item of proforma.items) {
-          // Create invoice item
           const { data: createdItem, error: itemError } = await supabase
             .from('invoice_items')
             .insert({
@@ -515,7 +448,6 @@ export const mockDataService = {
           
           if (itemError) throw itemError;
           
-          // Link item to proforma
           const { error: linkError } = await supabase
             .from('proforma_invoice_items')
             .insert({
@@ -526,14 +458,10 @@ export const mockDataService = {
           if (linkError) throw linkError;
         }
         
-        // Commit the transaction
         await commitTransaction();
-        
-        // Return the created proforma with full data
         return await mockDataService.getProformaInvoiceById(createdInvoice.id);
         
       } catch (error) {
-        // Rollback on error
         await rollbackTransaction();
         throw error;
       }
@@ -541,9 +469,9 @@ export const mockDataService = {
       console.error('Error creating proforma invoice:', error);
       throw error;
     }
-  },
-  
-  updateProformaStatus: async (id: string, status: 'draft' | 'sent' | 'approved' | 'rejected'): Promise<ProformaInvoice> => {
+  }
+
+  async updateProformaStatus(id: string, status: 'draft' | 'sent' | 'approved' | 'rejected'): Promise<{ id: string; status: string }> {
     const { error } = await supabase
       .from('proforma_invoices')
       .update({ status })
@@ -554,23 +482,22 @@ export const mockDataService = {
       throw error;
     }
     
-    return mockDataService.getProformaInvoiceById(id);
-  },
-  
-  convertProformaToFinal: async (proformaId: string): Promise<{ proforma: ProformaInvoice, finalInvoice: FinalInvoice }> => {
+    return {
+      id,
+      status
+    };
+  }
+
+  async convertProformaToFinal(proformaId: string): Promise<{ proforma: ProformaInvoice | null, finalInvoice: FinalInvoice | null }> {
     try {
-      // Start a transaction
       await beginTransaction();
       
       try {
-        // Get the proforma invoice
         const proforma = await mockDataService.getProformaInvoiceById(proformaId);
         
-        // Generate invoice number using database function
         const { data: numberData, error: numberError } = await supabase.rpc('generate_invoice_number');
         if (numberError) throw numberError;
         
-        // Create the final invoice
         const { data: createdInvoice, error: invoiceError } = await supabase
           .from('final_invoices')
           .insert({
@@ -590,9 +517,7 @@ export const mockDataService = {
         
         if (invoiceError) throw invoiceError;
         
-        // Link items to the final invoice
         for (const item of proforma.items) {
-          // Link item to final invoice
           const { error: linkError } = await supabase
             .from('final_invoice_items')
             .insert({
@@ -603,7 +528,6 @@ export const mockDataService = {
           if (linkError) throw linkError;
         }
         
-        // Update the proforma to point to the final invoice and set status to approved
         const { error: updateError } = await supabase
           .from('proforma_invoices')
           .update({
@@ -614,17 +538,14 @@ export const mockDataService = {
         
         if (updateError) throw updateError;
         
-        // Commit the transaction
         await commitTransaction();
         
-        // Return updated proforma and new final invoice
         const updatedProforma = await mockDataService.getProformaInvoiceById(proformaId);
         const finalInvoice = await mockDataService.getFinalInvoiceById(createdInvoice.id);
         
         return { proforma: updatedProforma, finalInvoice };
         
       } catch (error) {
-        // Rollback on error
         await rollbackTransaction();
         throw error;
       }
@@ -632,10 +553,10 @@ export const mockDataService = {
       console.error(`Error converting proforma invoice ${proformaId} to final:`, error);
       throw error;
     }
-  },
-  
+  }
+
   // Final Invoices
-  getFinalInvoices: async (): Promise<FinalInvoice[]> => {
+  async getFinalInvoices(): Promise<FinalInvoice[]> {
     const { data: invoicesData, error: invoicesError } = await supabase
       .from('final_invoices')
       .select('*, clients(*)');
@@ -648,7 +569,6 @@ export const mockDataService = {
     const finalInvoices: FinalInvoice[] = [];
     
     for (const invoice of invoicesData) {
-      // Get items for this invoice
       const { data: itemsJoinData, error: itemsJoinError } = await supabase
         .from('final_invoice_items')
         .select('*, invoice_items(*)')
@@ -734,9 +654,9 @@ export const mockDataService = {
     }
     
     return finalInvoices;
-  },
-  
-  getFinalInvoiceById: async (id: string): Promise<FinalInvoice> => {
+  }
+
+  async getFinalInvoiceById(id: string): Promise<FinalInvoice | null> {
     const { data: invoice, error: invoiceError } = await supabase
       .from('final_invoices')
       .select('*, clients(*)')
@@ -745,10 +665,9 @@ export const mockDataService = {
     
     if (invoiceError) {
       console.error(`Error fetching final invoice ${id}:`, invoiceError);
-      throw invoiceError;
+      return null;
     }
     
-    // Get items for this invoice
     const { data: itemsJoinData, error: itemsJoinError } = await supabase
       .from('final_invoice_items')
       .select('*, invoice_items(*)')
@@ -756,7 +675,7 @@ export const mockDataService = {
     
     if (itemsJoinError) {
       console.error(`Error fetching items for final invoice ${id}:`, itemsJoinError);
-      throw itemsJoinError;
+      return null;
     }
     
     const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
@@ -831,10 +750,35 @@ export const mockDataService = {
       createdAt: invoice.createdat || new Date().toISOString(),
       updatedAt: invoice.updatedat || new Date().toISOString()
     };
-  },
-  
+  }
+
+  async markFinalInvoiceAsPaid(id: string): Promise<FinalInvoice | null> {
+    try {
+      await beginTransaction();
+      
+      const { data, error } = await supabase
+        .from('final_invoices')
+        .update({ status: 'paid', paymentdate: new Date().toISOString().split('T')[0] })
+        .eq('id', id)
+        .select('*')
+        .single();
+      
+      if (error) {
+        await rollbackTransaction();
+        throw error;
+      }
+      
+      await commitTransaction();
+      return data as FinalInvoice;
+    } catch (error) {
+      console.error('Error marking invoice as paid:', error);
+      await rollbackTransaction();
+      return null;
+    }
+  }
+
   // Delivery Notes
-  getDeliveryNotes: async (): Promise<DeliveryNote[]> => {
+  async getDeliveryNotes(): Promise<DeliveryNote[]> {
     const { data: notesData, error: notesError } = await supabase
       .from('delivery_notes')
       .select('*, clients(*)');
@@ -847,7 +791,6 @@ export const mockDataService = {
     const deliveryNotes: DeliveryNote[] = [];
     
     for (const note of notesData) {
-      // Get items for this delivery note
       const { data: itemsJoinData, error: itemsJoinError } = await supabase
         .from('delivery_note_items')
         .select('*, invoice_items(*)')
@@ -938,9 +881,9 @@ export const mockDataService = {
     }
     
     return deliveryNotes;
-  },
-  
-  getDeliveryNoteById: async (id: string): Promise<DeliveryNote> => {
+  }
+
+  async getDeliveryNoteById(id: string): Promise<DeliveryNote | null> {
     const { data: note, error: noteError } = await supabase
       .from('delivery_notes')
       .select('*, clients(*)')
@@ -949,10 +892,9 @@ export const mockDataService = {
     
     if (noteError) {
       console.error(`Error fetching delivery note ${id}:`, noteError);
-      throw noteError;
+      return null;
     }
     
-    // Get items for this delivery note
     const { data: itemsJoinData, error: itemsJoinError } = await supabase
       .from('delivery_note_items')
       .select('*, invoice_items(*)')
@@ -960,7 +902,7 @@ export const mockDataService = {
     
     if (itemsJoinError) {
       console.error(`Error fetching items for delivery note ${id}:`, itemsJoinError);
-      throw itemsJoinError;
+      return null;
     }
     
     const items = await Promise.all(itemsJoinData.map(async (joinItem) => {
@@ -1040,19 +982,16 @@ export const mockDataService = {
       createdAt: note.createdat || new Date().toISOString(),
       updatedAt: note.updatedat || new Date().toISOString()
     };
-  },
-  
-  createDeliveryNote: async (deliveryNote: any): Promise<DeliveryNote> => {
+  }
+
+  async createDeliveryNote(deliveryNote: any): Promise<DeliveryNote> {
     try {
-      // Start a transaction
       await beginTransaction();
       
       try {
-        // Generate delivery note number using database function
         const { data: numberData, error: numberError } = await supabase.rpc('generate_delivery_note_number');
         if (numberError) throw numberError;
         
-        // Create the delivery note
         const { data: createdNote, error: noteError } = await supabase
           .from('delivery_notes')
           .insert({
@@ -1068,9 +1007,7 @@ export const mockDataService = {
         
         if (noteError) throw noteError;
         
-        // Create invoice items and link them to the delivery note
         for (const item of deliveryNote.items) {
-          // Create invoice item
           const { data: createdItem, error: itemError } = await supabase
             .from('invoice_items')
             .insert({
@@ -1088,7 +1025,6 @@ export const mockDataService = {
           
           if (itemError) throw itemError;
           
-          // Link item to delivery note
           const { error: linkError } = await supabase
             .from('delivery_note_items')
             .insert({
@@ -1099,14 +1035,10 @@ export const mockDataService = {
           if (linkError) throw linkError;
         }
         
-        // Commit the transaction
         await commitTransaction();
-        
-        // Return the created delivery note with full data
         return await mockDataService.getDeliveryNoteById(createdNote.id);
         
       } catch (error) {
-        // Rollback on error
         await rollbackTransaction();
         throw error;
       }
@@ -1115,4 +1047,6 @@ export const mockDataService = {
       throw error;
     }
   }
-};
+}
+
+export const mockDataService = new MockDataService();

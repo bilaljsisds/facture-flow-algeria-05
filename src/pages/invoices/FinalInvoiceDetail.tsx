@@ -1,6 +1,7 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -11,12 +12,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, Truck, printer } from 'lucide-react';
+import { ArrowLeft, Truck, Printer, Edit, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
 
 const FinalInvoiceDetail = () => {
   const { id } = useParams();
+  const queryClient = useQueryClient();
   const isNewInvoice = id === 'new';
   
   const { 
@@ -30,6 +32,25 @@ const FinalInvoiceDetail = () => {
   
   const invoice = isNewInvoice ? null : invoices.find(i => i.id === id);
   
+  const markAsPaidMutation = useMutation({
+    mutationFn: () => mockDataService.markFinalInvoiceAsPaid(id || ''),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
+      toast({
+        title: 'Invoice Updated',
+        description: 'Invoice has been marked as paid'
+      });
+    },
+    onError: (error) => {
+      console.error('Error marking invoice as paid:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Failed to mark invoice as paid. Please try again.'
+      });
+    }
+  });
+
   const formatCurrency = (amount?: number) => {
     if (amount === undefined) return '';
     return amount.toLocaleString('fr-DZ', { 
@@ -74,6 +95,11 @@ const FinalInvoiceDetail = () => {
         description: 'Failed to generate PDF. Please try again.'
       });
     }
+  };
+
+  const handleMarkAsPaid = () => {
+    if (!id) return;
+    markAsPaidMutation.mutate();
   };
 
   if (!isNewInvoice && isLoading) {
@@ -240,8 +266,15 @@ const FinalInvoiceDetail = () => {
           
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={handleExportPDF}>
-              <printer className="mr-2 h-4 w-4" />
+              <Printer className="mr-2 h-4 w-4" />
               Export PDF
+            </Button>
+            
+            <Button asChild variant="outline">
+              <Link to={`/invoices/final/edit/${invoice.id}`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Invoice
+              </Link>
             </Button>
             
             {['unpaid', 'paid'].includes(invoice.status) && (
@@ -254,7 +287,10 @@ const FinalInvoiceDetail = () => {
             )}
             
             {invoice.status === 'unpaid' && (
-              <Button>Mark as Paid</Button>
+              <Button onClick={handleMarkAsPaid}>
+                <Check className="mr-2 h-4 w-4" />
+                Mark as Paid
+              </Button>
             )}
           </div>
         </>
@@ -275,7 +311,7 @@ const FinalInvoiceDetail = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <printer className="h-10 w-10 text-muted-foreground/50" />
+              <Printer className="h-10 w-10 text-muted-foreground/50" />
               <p className="text-center text-muted-foreground">
                 Invoice not found
               </p>

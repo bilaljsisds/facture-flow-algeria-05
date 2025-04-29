@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -11,13 +12,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Truck, User, Printer } from 'lucide-react';
+import { ArrowLeft, FileText, Truck, User, Printer, Edit } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { exportDeliveryNoteToPDF } from '@/utils/exportUtils';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 
 const DeliveryNoteDetail = () => {
   const { id } = useParams();
   const isNewNote = id === 'new';
+  const { checkPermission } = useAuth();
+  const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   
   const { 
     data: deliveryNotes = [],
@@ -263,6 +267,15 @@ const DeliveryNoteDetail = () => {
               <Printer className="mr-2 h-4 w-4" />
               Print Delivery Note
             </Button>
+            
+            {canEdit && deliveryNote.status === 'pending' && (
+              <Button asChild variant="outline">
+                <Link to={`/delivery-notes/edit/${deliveryNote.id}`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Delivery Note
+                </Link>
+              </Button>
+            )}
             
             {deliveryNote.status === 'pending' && (
               <Button>Mark as Delivered</Button>
