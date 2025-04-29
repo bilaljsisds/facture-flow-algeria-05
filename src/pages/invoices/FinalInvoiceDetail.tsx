@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,11 +27,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const invoiceFormSchema = z.object({
   notes: z.string().optional(),
   issueDate: z.string(),
   dueDate: z.string(),
+  status: z.string()
 });
 
 const FinalInvoiceDetail = () => {
@@ -58,12 +65,14 @@ const FinalInvoiceDetail = () => {
     defaultValues: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || ''
+      dueDate: invoice?.dueDate || '',
+      status: invoice?.status || 'unpaid'
     },
     values: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || ''
+      dueDate: invoice?.dueDate || '',
+      status: invoice?.status || 'unpaid'
     }
   });
   
@@ -261,14 +270,32 @@ const FinalInvoiceDetail = () => {
                           </FormItem>
                         )}
                       />
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Status:</span>
-                        <span>
-                          <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                          </Badge>
-                        </span>
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="unpaid">Unpaid</SelectItem>
+                                <SelectItem value="paid">Paid</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                                <SelectItem value="credited">Credited</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </CardContent>
                 </Card>
