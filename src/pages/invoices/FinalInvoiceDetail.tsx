@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +33,6 @@ const invoiceFormSchema = z.object({
   notes: z.string().optional(),
   issueDate: z.string(),
   dueDate: z.string(),
-  status: z.enum(['unpaid', 'paid', 'cancelled', 'credited']),
 });
 
 const FinalInvoiceDetail = () => {
@@ -58,14 +58,12 @@ const FinalInvoiceDetail = () => {
     defaultValues: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || '',
-      status: invoice?.status || 'unpaid'
+      dueDate: invoice?.dueDate || ''
     },
     values: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || '',
-      status: invoice?.status || 'unpaid'
+      dueDate: invoice?.dueDate || ''
     }
   });
   
@@ -263,27 +261,14 @@ const FinalInvoiceDetail = () => {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status</FormLabel>
-                            <FormControl>
-                              <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2"
-                                {...field}
-                              >
-                                <option value="unpaid">Unpaid</option>
-                                <option value="paid">Paid</option>
-                                <option value="cancelled">Cancelled</option>
-                                <option value="credited">Credited</option>
-                              </select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="grid grid-cols-2">
+                        <span className="text-sm text-muted-foreground">Status:</span>
+                        <span>
+                          <Badge variant={getStatusBadgeVariant(invoice.status)}>
+                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                          </Badge>
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -47,7 +47,6 @@ import {
   Printer,
   Edit,
   Save,
-  Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
