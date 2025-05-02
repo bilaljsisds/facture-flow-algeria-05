@@ -291,7 +291,7 @@ class MockDataService {
       proformas.push({
         id: invoice.id,
         number: invoice.number,
-        clientId: invoice.clientid,
+        clientid: invoice.clientid,
         client,
         issueDate: invoice.issuedate,
         dueDate: invoice.duedate,
@@ -388,7 +388,7 @@ class MockDataService {
     return {
       id: invoice.id,
       number: invoice.number,
-      clientId: invoice.clientid,
+      clientid: invoice.clientid,
       client,
       issueDate: invoice.issuedate,
       dueDate: invoice.duedate,
@@ -415,7 +415,7 @@ class MockDataService {
         const { data: createdInvoice, error: invoiceError } = await supabase
           .from('proforma_invoices')
           .insert({
-            clientid: proforma.clientId,
+            clientid: proforma.clientid,
             number: numberData || proforma.number,
             issuedate: proforma.issueDate,
             duedate: proforma.dueDate,
@@ -501,7 +501,7 @@ class MockDataService {
         const { data: createdInvoice, error: invoiceError } = await supabase
           .from('final_invoices')
           .insert({
-            clientid: proforma.clientId,
+            clientid: proforma.clientid,
             proformaid: proformaId,
             number: numberData,
             issuedate: proforma.issueDate,
@@ -635,7 +635,7 @@ class MockDataService {
       finalInvoices.push({
         id: invoice.id,
         number: invoice.number,
-        clientId: invoice.clientid,
+        clientid: invoice.clientid,
         client,
         issueDate: invoice.issuedate,
         dueDate: invoice.duedate,
@@ -734,7 +734,7 @@ class MockDataService {
     return {
       id: invoice.id,
       number: invoice.number,
-      clientId: invoice.clientid,
+      clientid: invoice.clientid,
       client,
       issueDate: invoice.issuedate,
       dueDate: invoice.duedate,
@@ -868,7 +868,7 @@ class MockDataService {
         number: note.number,
         finalInvoiceId: note.finalinvoiceid,
         finalInvoice,
-        clientId: note.clientid,
+        clientid: note.clientid,
         client,
         issueDate: note.issuedate,
         deliveryDate: note.deliverydate,
@@ -972,7 +972,7 @@ class MockDataService {
       number: note.number,
       finalInvoiceId: note.finalinvoiceid,
       finalInvoice,
-      clientId: note.clientid,
+      clientid: note.clientid,
       client,
       issueDate: note.issuedate,
       deliveryDate: note.deliverydate,
@@ -995,7 +995,7 @@ class MockDataService {
         const { data: createdNote, error: noteError } = await supabase
           .from('delivery_notes')
           .insert({
-            clientid: deliveryNote.clientId,
+            clientid: deliveryNote.clientid,
             finalinvoiceid: deliveryNote.finalInvoiceId,
             number: numberData || deliveryNote.number,
             issuedate: deliveryNote.issueDate,

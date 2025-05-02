@@ -55,7 +55,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getCurrentDate, getFutureDate, generateId } from '@/types';
 
 const proformaSchema = z.object({
-  clientId: z.string().min(1, 'Client is required'),
+  clientid: z.string().min(1, 'Client is required'),
   issueDate: z.string().min(1, 'Issue date is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   notes: z.string().optional(),
@@ -106,7 +106,7 @@ const NewProformaInvoice = () => {
   const form = useForm<ProformaFormValues>({
     resolver: zodResolver(proformaSchema),
     defaultValues: {
-      clientId: '',
+      clientid: '',
       issueDate: getCurrentDate(),
       dueDate: getFutureDate(30),
       notes: '',
@@ -252,8 +252,8 @@ const NewProformaInvoice = () => {
       const total = subtotal + taxTotal + stampTax;
       
       const proforma = {
-        clientId: data.clientId,
-        client: clients.find(c => c.id === data.clientId),
+        clientid: data.clientid,
+        client: clients.find(c => c.id === data.clientid),
         issueDate: data.issueDate,
         dueDate: data.dueDate,
         notes: data.notes || '',
@@ -341,7 +341,7 @@ const NewProformaInvoice = () => {
             <CardContent>
               <FormField
                 control={form.control}
-                name="clientId"
+                name="clientid"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client</FormLabel>

@@ -42,7 +42,7 @@ export interface InvoiceItem {
 export interface BaseInvoice {
   id: string;
   number: string;
-  clientId: string;
+  clientid: string;
   client?: Client;
   issueDate: string;
   dueDate: string;
@@ -74,7 +74,7 @@ export interface DeliveryNote {
   number: string;
   finalInvoiceId: string;
   finalInvoice?: FinalInvoice;
-  clientId: string;
+  clientid: string;
   client?: Client;
   issueDate: string;
   deliveryDate?: string;

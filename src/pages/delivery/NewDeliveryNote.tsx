@@ -55,7 +55,7 @@ import { getCurrentDate, generateId } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 const deliveryNoteSchema = z.object({
-  clientId: z.string().min(1, 'Client is required'),
+  clientid: z.string().min(1, 'Client is required'),
   issueDate: z.string().min(1, 'Issue date is required'),
   notes: z.string().optional(),
   driverName: z.string().optional(),
@@ -108,7 +108,7 @@ const NewDeliveryNote = () => {
   const form = useForm<DeliveryNoteFormValues>({
     resolver: zodResolver(deliveryNoteSchema),
     defaultValues: {
-      clientId: '',
+      clientid: '',
       issueDate: getCurrentDate(),
       notes: '',
       driverName: '',
@@ -126,7 +126,7 @@ const NewDeliveryNote = () => {
 
   useEffect(() => {
     if (invoice) {
-      form.setValue('clientId', invoice.clientId);
+      form.setValue('clientid', invoice.clientid);
       form.setValue('notes', `Delivery for invoice ${invoice.number}`);
       
       if (invoice.items && invoice.items.length > 0) {
@@ -170,7 +170,7 @@ const NewDeliveryNote = () => {
   const createMutation = useMutation({
     mutationFn: async (data: DeliveryNoteFormValues) => {
       const deliveryNote = {
-        clientId: data.clientId,
+        clientid: data.clientid,
         finalInvoiceId: invoiceId || undefined,
         issueDate: data.issueDate,
         notes: data.notes || '',
@@ -270,7 +270,7 @@ const NewDeliveryNote = () => {
             <CardContent>
               <FormField
                 control={form.control}
-                name="clientId"
+                name="clientid"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client</FormLabel>

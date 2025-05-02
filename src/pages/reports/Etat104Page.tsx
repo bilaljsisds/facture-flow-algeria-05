@@ -30,7 +30,7 @@ import { toast } from '@/components/ui/use-toast';
 import { exportEtat104ToPDF, exportEtat104ToExcel } from '@/utils/exportUtils';
 
 interface ClientSummary {
-  clientId: string;
+  clientid: string;
   clientName: string;
   taxId: string;
   subtotal: number;
@@ -61,19 +61,19 @@ const Etat104Page = () => {
     filteredInvoices.forEach(invoice => {
       if (!invoice.client) return;
       
-      const clientId = invoice.client.id;
+      const clientid = invoice.client.id;
       
-      if (summaryMap.has(clientId)) {
-        const existing = summaryMap.get(clientId)!;
-        summaryMap.set(clientId, {
+      if (summaryMap.has(clientid)) {
+        const existing = summaryMap.get(clientid)!;
+        summaryMap.set(clientid, {
           ...existing,
           subtotal: existing.subtotal + invoice.subtotal,
           taxTotal: existing.taxTotal + invoice.taxTotal,
           total: existing.total + invoice.total,
         });
       } else {
-        summaryMap.set(clientId, {
-          clientId,
+        summaryMap.set(clientid, {
+          clientid,
           clientName: invoice.client.name,
           taxId: invoice.client.taxId,
           subtotal: invoice.subtotal,
@@ -256,7 +256,7 @@ const Etat104Page = () => {
                   </TableHeader>
                   <TableBody>
                     {clientSummaries.map((summary) => (
-                      <TableRow key={summary.clientId}>
+                      <TableRow key={summary.clientid}>
                         <TableCell>{summary.clientName}</TableCell>
                         <TableCell>{summary.taxId}</TableCell>
                         <TableCell className="text-right">{formatCurrency(summary.subtotal)}</TableCell>

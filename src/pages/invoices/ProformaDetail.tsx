@@ -85,7 +85,7 @@ import * as z from 'zod';
 import { generateId } from '@/types';
 
 const proformaFormSchema = z.object({
-  clientId: z.string().min(1, "Client is required"),
+  clientid: z.string().min(1, "Client is required"),
   notes: z.string().optional(),
   issueDate: z.string(),
   dueDate: z.string(),
@@ -145,7 +145,7 @@ const ProformaDetail = () => {
   const form = useForm({
     resolver: zodResolver(proformaFormSchema),
     defaultValues: {
-      clientId: proforma?.clientId || '',
+      clientid: proforma?.clientid || '',
       notes: proforma?.notes || '',
       issueDate: proforma?.issueDate || '',
       dueDate: proforma?.dueDate || '',
@@ -154,7 +154,7 @@ const ProformaDetail = () => {
       items: proforma?.items || [],
     },
     values: {
-      clientId: proforma?.clientId || '',
+      clientid: proforma?.clientid || '',
       notes: proforma?.notes || '',
       issueDate: proforma?.issueDate || '',
       dueDate: proforma?.dueDate || '',
@@ -256,7 +256,7 @@ const ProformaDetail = () => {
     mutationFn: async (data) => {
       // First update the invoice basic details
       await updateProformaInvoice(id || '', {
-        clientId: data.clientId,
+        clientid: data.clientid,
         issueDate: data.issueDate,
         dueDate: data.dueDate,
         notes: data.notes,
@@ -548,7 +548,7 @@ const ProformaDetail = () => {
               <CardContent className="space-y-2">
                 <FormField
                   control={form.control}
-                  name="clientId"
+                  name="clientid"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Client</FormLabel>

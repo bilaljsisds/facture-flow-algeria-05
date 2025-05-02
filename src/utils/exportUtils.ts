@@ -331,7 +331,7 @@ export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote) => {
 
 // ETAT 104 REPORT EXPORTS
 interface ClientSummary {
-  clientId: string;
+  clientid: string;
   clientName: string;
   taxId: string;
   subtotal: number;
