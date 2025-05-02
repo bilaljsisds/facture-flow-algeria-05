@@ -55,6 +55,48 @@ export const updateProformaInvoice = async (id: string, data: any) => {
   }
 };
 
+export const updateProformaInvoiceItems = async (proformaId: string, items: any[]) => {
+  try {
+    // Start a transaction
+    await beginTransaction();
+    
+    // Delete existing items for this proforma
+    const { error: deleteError } = await supabase
+      .from('proforma_invoice_items')
+      .delete()
+      .eq('proformainvoiceid', proformaId);
+    
+    if (deleteError) {
+      await rollbackTransaction();
+      throw deleteError;
+    }
+    
+    // Insert new items
+    const itemLinks = items.map(item => ({
+      proformainvoiceid: proformaId,
+      itemid: item.id
+    }));
+    
+    const { error: insertError } = await supabase
+      .from('proforma_invoice_items')
+      .insert(itemLinks);
+    
+    if (insertError) {
+      await rollbackTransaction();
+      throw insertError;
+    }
+    
+    // Commit the transaction
+    await commitTransaction();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating proforma invoice items:', error);
+    await rollbackTransaction();
+    throw error;
+  }
+};
+
 export const deleteProformaInvoice = async (id: string) => {
   try {
     // Start by deleting related records in the junction table
