@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { mockDataService } from '@/services/mockDataService';
 import { 
   supabase, 
-  updateProformaInvoice,
+  Br,
   updateProformaInvoiceItems,
   deleteProformaInvoice,
   undoProformaConversion 
@@ -255,7 +256,7 @@ const ProformaDetail = () => {
   const updateProformaMutation = useMutation({
     mutationFn: async (data) => {
       // First update the invoice basic details
-      await updateProformaInvoice(id || '', {
+      await Br.updateProformaInvoice(id || '', {
         clientid: data.clientid,
         issuedate: data.issuedate,
         duedate: data.duedate,
@@ -290,7 +291,7 @@ const ProformaDetail = () => {
       const total = subtotal + taxTotal + stampTax;
 
       // Update the invoice with calculated totals
-      await updateProformaInvoice(id || '', {
+      await Br.updateProformaInvoice(id || '', {
         subtotal,
         taxtotal: taxTotal,
         stamp_tax: stampTax,
@@ -300,7 +301,7 @@ const ProformaDetail = () => {
       // Process items for database insertion
       // Here we'd normally insert items into invoice_items table and link them
       // For the mock service, we're updating through the service
-      return await mockDataService.updateProformaInvoice(id || '', {
+      return await mockDataService.Br.updateProformaInvoice(id || '', {
         ...data,
         items: processedItems,
         subtotal,
@@ -349,7 +350,7 @@ const ProformaDetail = () => {
 
   const statusUpdateMutation = useMutation({
     mutationFn: (status: 'draft' | 'sent' | 'approved' | 'rejected') => {
-      return updateProformaInvoice(id || '', { status });
+      return Br.updateProformaInvoice(id || '', { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proformaInvoice', id] });
