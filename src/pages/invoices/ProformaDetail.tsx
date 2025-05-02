@@ -34,11 +34,11 @@ import { Button } from '@/components/ui/button';
 import { mockDataService } from '@/services/mockDataService';
 import { 
   supabase, 
-  Br,
   updateProformaInvoiceItems,
   deleteProformaInvoice,
   undoProformaConversion 
 } from '@/integrations/supabase/client';
+import Br from  '@/integrations/supabase/client';
 import {
   useAuth,
   UserRole
