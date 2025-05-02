@@ -162,7 +162,7 @@ const DeliveryNotesPage = () => {
                         </Link>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {note.issueDate}
+                        {note.issuedate}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(note.status)}>

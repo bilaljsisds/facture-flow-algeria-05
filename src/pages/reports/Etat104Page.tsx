@@ -48,7 +48,7 @@ const Etat104Page = () => {
   });
   
   const filteredInvoices = finalInvoices.filter(invoice => {
-    const invoiceDate = new Date(invoice.issueDate);
+    const invoiceDate = new Date(invoice.issuedate);
     return (
       invoiceDate.getFullYear() === parseInt(year) && 
       invoiceDate.getMonth() + 1 === parseInt(month)

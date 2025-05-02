@@ -172,7 +172,7 @@ const ProformaInvoicesPage = () => {
                         {invoice.client?.name || 'Unknown Client'}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {invoice.issueDate}
+                        {invoice.issuedate}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(invoice.status)}>

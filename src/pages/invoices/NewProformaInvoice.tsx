@@ -56,8 +56,8 @@ import { getCurrentDate, getFutureDate, generateId } from '@/types';
 
 const proformaSchema = z.object({
   clientid: z.string().min(1, 'Client is required'),
-  issueDate: z.string().min(1, 'Issue date is required'),
-  dueDate: z.string().min(1, 'Due date is required'),
+  issuedate: z.string().min(1, 'Issue date is required'),
+  duedate: z.string().min(1, 'Due date is required'),
   notes: z.string().optional(),
   paymentType: z.enum(['cheque', 'cash']),
   items: z.array(
@@ -107,8 +107,8 @@ const NewProformaInvoice = () => {
     resolver: zodResolver(proformaSchema),
     defaultValues: {
       clientid: '',
-      issueDate: getCurrentDate(),
-      dueDate: getFutureDate(30),
+      issuedate: getCurrentDate(),
+      duedate: getFutureDate(30),
       notes: '',
       paymentType: 'cheque',
       items: [
@@ -254,8 +254,8 @@ const NewProformaInvoice = () => {
       const proforma = {
         clientid: data.clientid,
         client: clients.find(c => c.id === data.clientid),
-        issueDate: data.issueDate,
-        dueDate: data.dueDate,
+        issuedate: data.issuedate,
+        duedate: data.duedate,
         notes: data.notes || '',
         status: 'draft',
         payment_type: data.paymentType,
@@ -379,7 +379,7 @@ const NewProformaInvoice = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
-                  name="issueDate"
+                  name="issuedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Issue Date</FormLabel>
@@ -393,7 +393,7 @@ const NewProformaInvoice = () => {
 
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="duedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Due Date</FormLabel>

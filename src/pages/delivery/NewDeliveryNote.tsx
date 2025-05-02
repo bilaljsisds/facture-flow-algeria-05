@@ -56,7 +56,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const deliveryNoteSchema = z.object({
   clientid: z.string().min(1, 'Client is required'),
-  issueDate: z.string().min(1, 'Issue date is required'),
+  issuedate: z.string().min(1, 'Issue date is required'),
   notes: z.string().optional(),
   driverName: z.string().optional(),
   truckId: z.string().optional(),
@@ -109,7 +109,7 @@ const NewDeliveryNote = () => {
     resolver: zodResolver(deliveryNoteSchema),
     defaultValues: {
       clientid: '',
-      issueDate: getCurrentDate(),
+      issuedate: getCurrentDate(),
       notes: '',
       driverName: '',
       truckId: '',
@@ -172,7 +172,7 @@ const NewDeliveryNote = () => {
       const deliveryNote = {
         clientid: data.clientid,
         finalInvoiceId: invoiceId || undefined,
-        issueDate: data.issueDate,
+        issuedate: data.issuedate,
         notes: data.notes || '',
         status: 'pending',
         driver_name: data.driverName || null,
@@ -307,7 +307,7 @@ const NewDeliveryNote = () => {
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="issueDate"
+                name="issuedate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Issue Date</FormLabel>

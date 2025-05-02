@@ -55,8 +55,8 @@ export const exportProformaInvoiceToPDF = (proforma: ProformaInvoice) => {
   pdf.setFontSize(10);
   pdf.text([
     `Invoice Number: ${proforma.number}`,
-    `Issue Date: ${formatDate(proforma.issueDate)}`,
-    `Due Date: ${formatDate(proforma.dueDate)}`,
+    `Issue Date: ${formatDate(proforma.issuedate)}`,
+    `Due Date: ${formatDate(proforma.duedate)}`,
     `Payment Method: ${proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}`
   ], 140, 75);
   
@@ -160,8 +160,8 @@ export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
   pdf.setFontSize(10);
   pdf.text([
     `Invoice Number: ${invoice.number}`,
-    `Issue Date: ${formatDate(invoice.issueDate)}`,
-    `Due Date: ${formatDate(invoice.dueDate)}`,
+    `Issue Date: ${formatDate(invoice.issuedate)}`,
+    `Due Date: ${formatDate(invoice.duedate)}`,
     `Status: ${invoice.status}`
   ], 140, 75);
   
@@ -255,7 +255,7 @@ export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote) => {
   pdf.setFontSize(10);
   pdf.text([
     `Delivery Number: ${deliveryNote.number}`,
-    `Issue Date: ${formatDate(deliveryNote.issueDate)}`,
+    `Issue Date: ${formatDate(deliveryNote.issuedate)}`,
     `Delivery Date: ${deliveryNote.deliveryDate ? formatDate(deliveryNote.deliveryDate) : 'Not delivered yet'}`
   ], 140, 75);
   

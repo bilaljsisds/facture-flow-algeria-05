@@ -77,8 +77,8 @@ import * as z from 'zod';
 
 const finalInvoiceFormSchema = z.object({
   notes: z.string().optional(),
-  issueDate: z.string(),
-  dueDate: z.string(),
+  issuedate: z.string(),
+  duedate: z.string(),
   status: z.string(),
   paymentDate: z.string().optional(),
   paymentReference: z.string().optional(),
@@ -102,16 +102,16 @@ const FinalInvoiceDetail = () => {
     resolver: zodResolver(finalInvoiceFormSchema),
     defaultValues: {
       notes: invoice?.notes || '',
-      issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || '',
+      issuedate: invoice?.issuedate || '',
+      duedate: invoice?.duedate || '',
       status: invoice?.status || 'unpaid',
       paymentDate: invoice?.paymentDate || '',
       paymentReference: invoice?.paymentReference || '',
     },
     values: {
       notes: invoice?.notes || '',
-      issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || '',
+      issuedate: invoice?.issuedate || '',
+      duedate: invoice?.duedate || '',
       status: invoice?.status || 'unpaid',
       paymentDate: invoice?.paymentDate || '',
       paymentReference: invoice?.paymentReference || '',
@@ -340,7 +340,7 @@ const FinalInvoiceDetail = () => {
 
                 <FormField
                   control={form.control}
-                  name="issueDate"
+                  name="issuedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Issue Date</FormLabel>
@@ -354,7 +354,7 @@ const FinalInvoiceDetail = () => {
                 
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="duedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Due Date</FormLabel>
@@ -550,11 +550,11 @@ const FinalInvoiceDetail = () => {
                 </div>
                 <div>
                   <strong className="font-semibold">Issue Date:</strong>{" "}
-                  {formatDate(invoice.issueDate)}
+                  {formatDate(invoice.issuedate)}
                 </div>
                 <div>
                   <strong className="font-semibold">Due Date:</strong>{" "}
-                  {formatDate(invoice.dueDate)}
+                  {formatDate(invoice.duedate)}
                 </div>
                 <div>
                   <strong className="font-semibold">Status:</strong>{" "}

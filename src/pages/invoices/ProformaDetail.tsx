@@ -87,8 +87,8 @@ import { generateId } from '@/types';
 const proformaFormSchema = z.object({
   clientid: z.string().min(1, "Client is required"),
   notes: z.string().optional(),
-  issueDate: z.string(),
-  dueDate: z.string(),
+  issuedate: z.string(),
+  duedate: z.string(),
   payment_type: z.string(),
   status: z.string().optional(),
   items: z.array(
@@ -147,8 +147,8 @@ const ProformaDetail = () => {
     defaultValues: {
       clientid: proforma?.clientid || '',
       notes: proforma?.notes || '',
-      issueDate: proforma?.issueDate || '',
-      dueDate: proforma?.dueDate || '',
+      issuedate: proforma?.issuedate || '',
+      duedate: proforma?.duedate || '',
       payment_type: proforma?.payment_type || 'cheque',
       status: proforma?.status || 'draft',
       items: proforma?.items || [],
@@ -156,8 +156,8 @@ const ProformaDetail = () => {
     values: {
       clientid: proforma?.clientid || '',
       notes: proforma?.notes || '',
-      issueDate: proforma?.issueDate || '',
-      dueDate: proforma?.dueDate || '',
+      issuedate: proforma?.issuedate || '',
+      duedate: proforma?.duedate || '',
       payment_type: proforma?.payment_type || 'cheque',
       status: proforma?.status || 'draft',
       items: proforma?.items || [],
@@ -257,8 +257,8 @@ const ProformaDetail = () => {
       // First update the invoice basic details
       await updateProformaInvoice(id || '', {
         clientid: data.clientid,
-        issueDate: data.issueDate,
-        dueDate: data.dueDate,
+        issuedate: data.issuedate,
+        duedate: data.duedate,
         notes: data.notes,
         payment_type: data.payment_type,
         status: data.status
@@ -604,7 +604,7 @@ const ProformaDetail = () => {
                 </div>
                 <FormField
                   control={form.control}
-                  name="issueDate"
+                  name="issuedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Issue Date</FormLabel>
@@ -617,7 +617,7 @@ const ProformaDetail = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="dueDate"
+                  name="duedate"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Due Date</FormLabel>
@@ -888,11 +888,11 @@ const ProformaDetail = () => {
               </div>
               <div>
                 <strong className="font-semibold">Issue Date:</strong>{" "}
-                {formatDate(proforma.issueDate)}
+                {formatDate(proforma.issuedate)}
               </div>
               <div>
                 <strong className="font-semibold">Due Date:</strong>{" "}
-                {formatDate(proforma.dueDate)}
+                {formatDate(proforma.duedate)}
               </div>
               <div>
                 <strong className="font-semibold">Status:</strong>{" "}

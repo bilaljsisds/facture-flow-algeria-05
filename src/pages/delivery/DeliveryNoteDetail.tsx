@@ -61,7 +61,7 @@ const deliveryNoteFormSchema = z.object({
   driver_name: z.string().optional(),
   truck_id: z.string().optional(),
   delivery_company: z.string().optional(),
-  issueDate: z.string(),
+  issuedate: z.string(),
   deliveryDate: z.string().optional(),
 });
 
@@ -92,7 +92,7 @@ const DeliveryNoteDetail = () => {
       driver_name: deliveryNote?.driver_name || '',
       truck_id: deliveryNote?.truck_id || '',
       delivery_company: deliveryNote?.delivery_company || '',
-      issueDate: deliveryNote?.issueDate || '',
+      issuedate: deliveryNote?.issuedate || '',
       deliveryDate: deliveryNote?.deliveryDate || '',
     },
     values: {
@@ -100,7 +100,7 @@ const DeliveryNoteDetail = () => {
       driver_name: deliveryNote?.driver_name || '',
       truck_id: deliveryNote?.truck_id || '',
       delivery_company: deliveryNote?.delivery_company || '',
-      issueDate: deliveryNote?.issueDate || '',
+      issuedate: deliveryNote?.issuedate || '',
       deliveryDate: deliveryNote?.deliveryDate || '',
     }
   });
@@ -302,7 +302,7 @@ const DeliveryNoteDetail = () => {
                       
                       <FormField
                         control={form.control}
-                        name="issueDate"
+                        name="issuedate"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Issue Date</FormLabel>
@@ -508,7 +508,7 @@ const DeliveryNoteDetail = () => {
                     </div>
                     <div className="grid grid-cols-2">
                       <span className="text-sm text-muted-foreground">Issue Date:</span>
-                      <span>{deliveryNote.issueDate}</span>
+                      <span>{deliveryNote.issuedate}</span>
                     </div>
                     <div className="grid grid-cols-2">
                       <span className="text-sm text-muted-foreground">Delivery Date:</span>
