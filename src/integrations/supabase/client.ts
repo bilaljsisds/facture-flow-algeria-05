@@ -38,3 +38,142 @@ export const rollbackTransaction = async () => {
     throw error;
   }
 };
+
+// Update proforma invoice functions
+export const updateProformaInvoice = async (id: string, data: any) => {
+  try {
+    const { error } = await supabase
+      .from('proforma_invoices')
+      .update(data)
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating proforma invoice:', error);
+    throw error;
+  }
+};
+
+export const deleteProformaInvoice = async (id: string) => {
+  try {
+    // Start by deleting related records in the junction table
+    const { error: itemsError } = await supabase
+      .from('proforma_invoice_items')
+      .delete()
+      .eq('proformainvoiceid', id);
+    
+    if (itemsError) throw itemsError;
+    
+    // Then delete the proforma invoice
+    const { error } = await supabase
+      .from('proforma_invoices')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting proforma invoice:', error);
+    throw error;
+  }
+};
+
+// Update final invoice functions
+export const updateFinalInvoice = async (id: string, data: any) => {
+  try {
+    const { error } = await supabase
+      .from('final_invoices')
+      .update(data)
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating final invoice:', error);
+    throw error;
+  }
+};
+
+export const deleteFinalInvoice = async (id: string) => {
+  try {
+    // Start by deleting related records in the junction table
+    const { error: itemsError } = await supabase
+      .from('final_invoice_items')
+      .delete()
+      .eq('finalinvoiceid', id);
+    
+    if (itemsError) throw itemsError;
+    
+    // Then delete the final invoice
+    const { error } = await supabase
+      .from('final_invoices')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting final invoice:', error);
+    throw error;
+  }
+};
+
+// Update delivery note functions
+export const updateDeliveryNote = async (id: string, data: any) => {
+  try {
+    const { error } = await supabase
+      .from('delivery_notes')
+      .update(data)
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating delivery note:', error);
+    throw error;
+  }
+};
+
+export const deleteDeliveryNote = async (id: string) => {
+  try {
+    // Start by deleting related records in the junction table
+    const { error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .delete()
+      .eq('deliverynoteid', id);
+    
+    if (itemsError) throw itemsError;
+    
+    // Then delete the delivery note
+    const { error } = await supabase
+      .from('delivery_notes')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting delivery note:', error);
+    throw error;
+  }
+};
+
+// Function to handle disconnecting a proforma from a final invoice
+export const undoProformaConversion = async (proformaId: string, finalInvoiceId: string) => {
+  try {
+    // Update the proforma invoice to remove the finalInvoiceId reference
+    const { error: proformaError } = await supabase
+      .from('proforma_invoices')
+      .update({ finalinvoiceid: null })
+      .eq('id', proformaId);
+    
+    if (proformaError) throw proformaError;
+    
+    // Delete the final invoice
+    return await deleteFinalInvoice(finalInvoiceId);
+  } catch (error) {
+    console.error('Error undoing proforma conversion:', error);
+    throw error;
+  }
+};

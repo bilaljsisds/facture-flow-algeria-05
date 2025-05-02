@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
@@ -9,10 +9,49 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, Truck, Printer, Edit, Check, Save } from 'lucide-react';
+import { 
+  supabase, 
+  updateFinalInvoice, 
+  deleteFinalInvoice 
+} from '@/integrations/supabase/client';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
+import {
+  ArrowLeft,
+  Calendar,
+  CreditCard,
+  Banknote,
+  FileText,
+  Ban,
+  Check,
+  Edit,
+  Save,
+  Printer,
+  Trash2,
+  Undo,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import { exportFinalInvoiceToPDF } from '@/utils/exportUtils';
 import {
@@ -23,54 +62,66 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
-const invoiceFormSchema = z.object({
+const finalInvoiceFormSchema = z.object({
   notes: z.string().optional(),
   issueDate: z.string(),
   dueDate: z.string(),
+  status: z.string(),
+  paymentDate: z.string().optional(),
+  paymentReference: z.string().optional(),
 });
 
 const FinalInvoiceDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const isNewInvoice = id === 'new';
+  const { checkPermission } = useAuth();
+  const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const isEditMode = window.location.pathname.includes('/edit/');
-  
-  const { 
-    data: invoices = [],
-    isLoading 
-  } = useQuery({
-    queryKey: ['finalInvoices'],
-    queryFn: () => mockDataService.getFinalInvoices(),
-    enabled: !isNewInvoice,
+
+  const { data: invoice, isLoading } = useQuery({
+    queryKey: ['finalInvoice', id],
+    queryFn: () => mockDataService.getFinalInvoiceById(id!),
+    enabled: !!id,
   });
-  
-  const invoice = isNewInvoice ? null : invoices.find(i => i.id === id);
 
   const form = useForm({
-    resolver: zodResolver(invoiceFormSchema),
+    resolver: zodResolver(finalInvoiceFormSchema),
     defaultValues: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || ''
+      dueDate: invoice?.dueDate || '',
+      status: invoice?.status || 'unpaid',
+      paymentDate: invoice?.paymentDate || '',
+      paymentReference: invoice?.paymentReference || '',
     },
     values: {
       notes: invoice?.notes || '',
       issueDate: invoice?.issueDate || '',
-      dueDate: invoice?.dueDate || ''
+      dueDate: invoice?.dueDate || '',
+      status: invoice?.status || 'unpaid',
+      paymentDate: invoice?.paymentDate || '',
+      paymentReference: invoice?.paymentReference || '',
     }
   });
-  
+
   const updateInvoiceMutation = useMutation({
-    mutationFn: (data) => mockDataService.updateFinalInvoice(id || '', data),
+    mutationFn: (data) => updateFinalInvoice(id || '', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
+      queryClient.invalidateQueries({ queryKey: ['finalInvoice', id] });
       toast({
         title: 'Invoice Updated',
         description: 'Invoice has been updated successfully'
@@ -87,48 +138,55 @@ const FinalInvoiceDetail = () => {
     }
   });
 
-  const markAsPaidMutation = useMutation({
-    mutationFn: () => mockDataService.markFinalInvoiceAsPaid(id || ''),
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: () => deleteFinalInvoice(id || ''),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['finalInvoices'] });
       toast({
-        title: 'Invoice Updated',
-        description: 'Invoice has been marked as paid'
+        title: 'Invoice Deleted',
+        description: 'Invoice has been deleted successfully'
       });
+      navigate('/invoices/final');
     },
     onError: (error) => {
-      console.error('Error marking invoice as paid:', error);
+      console.error('Error deleting invoice:', error);
       toast({
         variant: 'destructive',
-        title: 'Update Failed',
-        description: 'Failed to mark invoice as paid. Please try again.'
+        title: 'Delete Failed',
+        description: 'Failed to delete invoice. Please try again.'
       });
     }
   });
 
-  const formatCurrency = (amount?: number) => {
-    if (amount === undefined) return '';
-    return amount.toLocaleString('fr-DZ', { 
-      style: 'currency', 
-      currency: 'DZD',
-      minimumFractionDigits: 2
-    });
-  };
-  
-  const getStatusBadgeVariant = (status?: string) => {
-    if (!status) return 'outline';
-    switch (status) {
-      case 'paid':
-        return 'default';
-      case 'unpaid':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      case 'credited':
-        return 'outline';
-      default:
-        return 'outline';
+  const statusUpdateMutation = useMutation({
+    mutationFn: (data) => {
+      return updateFinalInvoice(id || '', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finalInvoice', id] });
+      toast({
+        title: 'Status Updated',
+        description: 'Invoice status has been updated successfully'
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: 'destructive',
+        title: 'Status Update Failed',
+        description: 'Failed to update invoice status. Please try again.'
+      });
+      console.error('Error updating invoice status:', error);
     }
+  });
+
+  const handleUpdateStatus = (status: 'paid' | 'unpaid' | 'cancelled' | 'credited', additionalData = {}) => {
+    if (!id) return;
+    statusUpdateMutation.mutate({ status, ...additionalData });
+  };
+
+  const handleMarkAsPaid = () => {
+    const paymentDate = new Date().toISOString().split('T')[0];
+    handleUpdateStatus('paid', { paymentDate });
   };
 
   const handleExportPDF = () => {
@@ -152,9 +210,9 @@ const FinalInvoiceDetail = () => {
     }
   };
 
-  const handleMarkAsPaid = () => {
+  const handleDeleteInvoice = () => {
     if (!id) return;
-    markAsPaidMutation.mutate();
+    deleteInvoiceMutation.mutate();
   };
 
   const onSubmit = (data) => {
@@ -162,13 +220,60 @@ const FinalInvoiceDetail = () => {
     updateInvoiceMutation.mutate(data);
   };
 
-  if (!isNewInvoice && isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <div className="flex items-center gap-2">
+          <span className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"></span>
+          <span>Loading...</span>
+        </div>
       </div>
     );
   }
+
+  if (!invoice) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex h-40 flex-col items-center justify-center gap-2">
+            <p className="text-center text-muted-foreground">
+              Invoice not found
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/invoices/final">Return to List</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const statusColor = {
+    unpaid: "bg-amber-500",
+    paid: "bg-green-500",
+    cancelled: "bg-red-500",
+    credited: "bg-purple-500",
+  };
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('fr-DZ', {
+      style: 'currency',
+      currency: 'DZD',
+      minimumFractionDigits: 2
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-DZ');
+  };
+
+  const getPaymentTypeIcon = (paymentType: string) => {
+    if (paymentType === 'cash') {
+      return <Banknote className="h-4 w-4 text-green-600 mr-2" />;
+    }
+    return <CreditCard className="h-4 w-4 text-blue-600 mr-2" />;
+  };
 
   return (
     <div className="space-y-6">
@@ -180,370 +285,544 @@ const FinalInvoiceDetail = () => {
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isNewInvoice ? 'New Final Invoice' : isEditMode ? `Edit Invoice: ${invoice?.number}` : `Invoice: ${invoice?.number}`}
+            {isEditMode ? `Edit Invoice: ${invoice.number}` : `Invoice: ${invoice.number}`}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          {!isNewInvoice && !isEditMode && invoice?.status && (
-            <Badge variant={getStatusBadgeVariant(invoice.status)}>
-              {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-            </Badge>
-          )}
-        </div>
+        {!isEditMode && (
+          <Badge
+            className={`${statusColor[invoice.status]} text-white px-3 py-1 text-xs font-medium uppercase`}
+          >
+            {invoice.status}
+          </Badge>
+        )}
       </div>
-      
-      {!isNewInvoice && invoice ? (
-        isEditMode ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Client Information</CardTitle>
-                    <CardDescription>Client details for this invoice</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Name:</span>
-                        <span>{invoice.client?.name}</span>
-                      </div>
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Tax ID:</span>
-                        <span>{invoice.client?.taxId}</span>
-                      </div>
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Address:</span>
-                        <span>{invoice.client?.address}</span>
-                      </div>
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">City:</span>
-                        <span>{invoice.client?.city}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+
+      {isEditMode ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <strong className="font-semibold">Name:</strong>{" "}
+                  {invoice.client?.name}
+                </div>
+                <div>
+                  <strong className="font-semibold">Tax ID:</strong>{" "}
+                  {invoice.client?.taxId}
+                </div>
+                <div>
+                  <strong className="font-semibold">Address:</strong>{" "}
+                  {invoice.client?.address}
+                </div>
+                <div>
+                  <strong className="font-semibold">City:</strong>{" "}
+                  {invoice.client?.city}, {invoice.client?.country}
+                </div>
+                <div>
+                  <strong className="font-semibold">Contact:</strong>{" "}
+                  {invoice.client?.phone} | {invoice.client?.email}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <strong className="font-semibold">Invoice Number:</strong>{" "}
+                  {invoice.number}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Issue Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Invoice Details</CardTitle>
-                    <CardDescription>Information about this document</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Invoice Number:</span>
-                        <span>{invoice.number}</span>
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="issueDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Issue Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="dueDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Due Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">Status:</span>
-                        <span>
-                          <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                          </Badge>
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Items</CardTitle>
-                  <CardDescription>Products and services in this invoice</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-hidden rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="px-4 py-2 text-left">Product</th>
-                          <th className="px-4 py-2 text-right">Qty</th>
-                          <th className="px-4 py-2 text-right">Unit Price</th>
-                          <th className="px-4 py-2 text-right">Tax</th>
-                          <th className="px-4 py-2 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoice.items.map((item) => (
-                          <tr key={item.id} className="border-b">
-                            <td className="px-4 py-2">
-                              <div>
-                                <div className="font-medium">{item.product?.name}</div>
-                                <div className="text-xs text-muted-foreground">{item.product?.description}</div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 text-right">{item.quantity}</td>
-                            <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
-                            <td className="px-4 py-2 text-right">{item.taxrate}%</td>
-                            <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="mt-4 space-y-2 border-t pt-4 text-right">
-                    <div className="flex justify-between">
-                      <span className="font-medium">Subtotal:</span>
-                      <span>{formatCurrency(invoice.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Tax:</span>
-                      <span>{formatCurrency(invoice.taxTotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total:</span>
-                      <span>{formatCurrency(invoice.total)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6">
+                <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Due Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="unpaid">Unpaid</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="credited">Credited</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch('status') === 'paid' && (
+                  <>
                     <FormField
                       control={form.control}
-                      name="notes"
+                      name="paymentDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Notes</FormLabel>
+                          <FormLabel>Payment Date</FormLabel>
                           <FormControl>
-                            <Textarea rows={4} {...field} />
+                            <Input type="date" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" asChild>
-                  <Link to={`/invoices/final/${invoice.id}`}>Cancel</Link>
-                </Button>
-                <Button type="submit" disabled={updateInvoiceMutation.isPending}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </Form>
-        ) : (
-          <>
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Client Information</CardTitle>
-                  <CardDescription>Client details for this invoice</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Name:</span>
-                      <span>{invoice.client?.name}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Tax ID:</span>
-                      <span>{invoice.client?.taxId}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Address:</span>
-                      <span>{invoice.client?.address}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">City:</span>
-                      <span>{invoice.client?.city}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Invoice Details</CardTitle>
-                  <CardDescription>Information about this document</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Invoice Number:</span>
-                      <span>{invoice.number}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Issue Date:</span>
-                      <span>{invoice.issueDate}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Due Date:</span>
-                      <span>{invoice.dueDate}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <span>
-                        <Badge variant={getStatusBadgeVariant(invoice.status)}>
-                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                        </Badge>
-                      </span>
-                    </div>
-                    {invoice.proformaId && (
-                      <div className="grid grid-cols-2">
-                        <span className="text-sm text-muted-foreground">From Proforma:</span>
-                        <span>
-                          <Link to={`/invoices/proforma/${invoice.proformaId}`} className="text-primary hover:underline">
-                            P-{invoice.proformaId.padStart(4, '0')}
-                          </Link>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Items</CardTitle>
-                <CardDescription>Products and services in this invoice</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-hidden rounded-md border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-2 text-left">Product</th>
-                        <th className="px-4 py-2 text-right">Qty</th>
-                        <th className="px-4 py-2 text-right">Unit Price</th>
-                        <th className="px-4 py-2 text-right">Tax</th>
-                        <th className="px-4 py-2 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoice.items.map((item) => (
-                        <tr key={item.id} className="border-b">
-                          <td className="px-4 py-2">
-                            <div>
-                              <div className="font-medium">{item.product?.name}</div>
-                              <div className="text-xs text-muted-foreground">{item.product?.description}</div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-2 text-right">{item.quantity}</td>
-                          <td className="px-4 py-2 text-right">{formatCurrency(item.unitprice)}</td>
-                          <td className="px-4 py-2 text-right">{item.taxrate}%</td>
-                          <td className="px-4 py-2 text-right">{formatCurrency(item.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="mt-4 space-y-2 border-t pt-4 text-right">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Subtotal:</span>
-                    <span>{formatCurrency(invoice.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Tax:</span>
-                    <span>{formatCurrency(invoice.taxTotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span>{formatCurrency(invoice.total)}</span>
-                  </div>
-                </div>
-                
-                {invoice.notes && (
-                  <div className="mt-6 rounded-md border p-4">
-                    <h4 className="mb-2 font-medium">Notes</h4>
-                    <p className="text-sm">{invoice.notes}</p>
+                    
+                    <FormField
+                      control={form.control}
+                      name="paymentReference"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment Reference</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                {invoice.proformaId && (
+                  <div>
+                    <strong className="font-semibold">From Proforma:</strong>{" "}
+                    <Link
+                      to={`/invoices/proforma/${invoice.proformaId}`}
+                      className="text-primary hover:underline"
+                    >
+                      View Proforma
+                    </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
-            
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Items</CardTitle>
+                <CardDescription>Products and services included in this invoice</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Tax %</TableHead>
+                      <TableHead className="text-right">Discount %</TableHead>
+                      <TableHead className="text-right">Total Excl.</TableHead>
+                      <TableHead className="text-right">Tax Amount</TableHead>
+                      <TableHead className="text-right">Total Incl.</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoice.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="font-medium">{item.product?.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {item.product?.code}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.unitprice)}</TableCell>
+                        <TableCell className="text-right">{item.taxrate}%</TableCell>
+                        <TableCell className="text-right">{item.discount}%</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.totalExcl)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.totalTax)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                <div className="mt-6">
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notes</FormLabel>
+                        <FormControl>
+                          <Textarea rows={4} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleExportPDF}>
-                <Printer className="mr-2 h-4 w-4" />
-                Export PDF
+              <Button variant="outline" asChild>
+                <Link to={`/invoices/final/${invoice.id}`}>Cancel</Link>
               </Button>
-              
-              <Button asChild variant="outline">
-                <Link to={`/invoices/final/edit/${invoice.id}`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Invoice
-                </Link>
+              <Button type="submit" disabled={updateInvoiceMutation.isPending}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
               </Button>
-              
-              {['unpaid', 'paid'].includes(invoice.status) && (
-                <Button asChild>
-                  <Link to={`/delivery-notes/new?invoiceId=${invoice.id}`}>
-                    <Truck className="mr-2 h-4 w-4" />
-                    Create Delivery Note
+            </div>
+          </form>
+        </Form>
+      ) : (
+        <>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <strong className="font-semibold">Name:</strong>{" "}
+                  {invoice.client?.name}
+                </div>
+                <div>
+                  <strong className="font-semibold">Tax ID:</strong>{" "}
+                  {invoice.client?.taxId}
+                </div>
+                <div>
+                  <strong className="font-semibold">Address:</strong>{" "}
+                  {invoice.client?.address}
+                </div>
+                <div>
+                  <strong className="font-semibold">City:</strong>{" "}
+                  {invoice.client?.city}, {invoice.client?.country}
+                </div>
+                <div>
+                  <strong className="font-semibold">Contact:</strong>{" "}
+                  {invoice.client?.phone} | {invoice.client?.email}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <strong className="font-semibold">Invoice Number:</strong>{" "}
+                  {invoice.number}
+                </div>
+                <div>
+                  <strong className="font-semibold">Issue Date:</strong>{" "}
+                  {formatDate(invoice.issueDate)}
+                </div>
+                <div>
+                  <strong className="font-semibold">Due Date:</strong>{" "}
+                  {formatDate(invoice.dueDate)}
+                </div>
+                <div>
+                  <strong className="font-semibold">Status:</strong>{" "}
+                  <Badge
+                    className={`${statusColor[invoice.status]} text-white px-2 py-0.5 text-xs font-medium`}
+                  >
+                    {invoice.status}
+                  </Badge>
+                </div>
+                
+                {invoice.status === 'paid' && (
+                  <>
+                    <div>
+                      <strong className="font-semibold">Payment Date:</strong>{" "}
+                      {formatDate(invoice.paymentDate || '')}
+                    </div>
+                    {invoice.paymentReference && (
+                      <div>
+                        <strong className="font-semibold">Payment Reference:</strong>{" "}
+                        {invoice.paymentReference}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {invoice.proformaId && (
+                  <div>
+                    <strong className="font-semibold">From Proforma:</strong>{" "}
+                    <Link
+                      to={`/invoices/proforma/${invoice.proformaId}`}
+                      className="text-primary hover:underline"
+                    >
+                      View Proforma
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Items</CardTitle>
+              <CardDescription>Products and services included in this invoice</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead className="text-right">Tax %</TableHead>
+                    <TableHead className="text-right">Discount %</TableHead>
+                    <TableHead className="text-right">Total Excl.</TableHead>
+                    <TableHead className="text-right">Tax Amount</TableHead>
+                    <TableHead className="text-right">Total Incl.</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoice.items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div className="font-medium">{item.product?.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {item.product?.code}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.unitprice)}</TableCell>
+                      <TableCell className="text-right">{item.taxrate}%</TableCell>
+                      <TableCell className="text-right">{item.discount}%</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.totalExcl)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.totalTax)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(item.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <tfoot>
+                  <tr className="border-t">
+                    <td colSpan={5} className="px-4 py-2 text-right font-semibold">
+                      Subtotal:
+                    </td>
+                    <td colSpan={3} className="px-4 py-2 text-right">
+                      {formatCurrency(invoice.subtotal)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colSpan={5} className="px-4 py-2 text-right font-semibold">
+                      Tax Total:
+                    </td>
+                    <td colSpan={3} className="px-4 py-2 text-right">
+                      {formatCurrency(invoice.taxTotal)}
+                    </td>
+                  </tr>
+                  <tr className="border-t">
+                    <td colSpan={5} className="px-4 py-2 text-right font-bold text-lg">
+                      Total:
+                    </td>
+                    <td colSpan={3} className="px-4 py-2 text-right font-bold text-lg">
+                      {formatCurrency(invoice.total)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {invoice.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent className="whitespace-pre-line">{invoice.notes}</CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+              <CardDescription>Manage this invoice</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              {canEdit && invoice.status !== 'credited' && (
+                <Button asChild variant="outline">
+                  <Link to={`/invoices/final/edit/${invoice.id}`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Invoice
                   </Link>
                 </Button>
               )}
               
-              {invoice.status === 'unpaid' && (
-                <Button onClick={handleMarkAsPaid}>
-                  <Check className="mr-2 h-4 w-4" />
-                  Mark as Paid
-                </Button>
+              {invoice.status === 'unpaid' && canEdit && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="default" className="bg-green-600 hover:bg-green-700">
+                      <Check className="mr-2 h-4 w-4" />
+                      Mark as Paid
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Mark as Paid</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will mark the invoice as paid and set payment date to today.
+                        Would you like to add a payment reference?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-4">
+                      <Input
+                        placeholder="Payment reference (optional)"
+                        id="paymentReference"
+                        className="mb-2"
+                      />
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          const paymentRef = (document.getElementById('paymentReference') as HTMLInputElement)?.value;
+                          const paymentDate = new Date().toISOString().split('T')[0];
+                          const data = {
+                            status: 'paid',
+                            paymentDate,
+                            ...(paymentRef ? { paymentReference: paymentRef } : {})
+                          };
+                          statusUpdateMutation.mutate(data);
+                        }}
+                      >
+                        Mark as Paid
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
-            </div>
-          </>
-        )
-      ) : isNewInvoice ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>New Final Invoice</CardTitle>
-            <CardDescription>Create a new final invoice</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center py-8 text-muted-foreground">
-              This is a demonstration application. <br />
-              The full invoice creation form would be implemented here in a production environment.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex h-40 flex-col items-center justify-center gap-2">
-              <Printer className="h-10 w-10 text-muted-foreground/50" />
-              <p className="text-center text-muted-foreground">
-                Invoice not found
-              </p>
-              <Button asChild variant="outline">
-                <Link to="/invoices/final">Return to List</Link>
+
+              {invoice.status === 'unpaid' && canEdit && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="bg-red-50 hover:bg-red-100">
+                      <Ban className="mr-2 h-4 w-4 text-red-600" />
+                      Cancel Invoice
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Invoice</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will mark the invoice as cancelled.
+                        Are you sure you want to proceed?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>No, Keep It</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleUpdateStatus('cancelled')}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Yes, Cancel It
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
+              {canEdit && invoice.status === 'unpaid' && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this invoice.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteInvoice}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+
+              {(invoice.status === 'paid' || invoice.status === 'cancelled') && canEdit && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="bg-yellow-50 hover:bg-yellow-100">
+                      <Undo className="mr-2 h-4 w-4 text-yellow-600" />
+                      Revert to Unpaid
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Revert to Unpaid</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will revert the invoice status to unpaid.
+                        Are you sure you want to proceed?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleUpdateStatus('unpaid', { paymentDate: null, paymentReference: null })}
+                      >
+                        Confirm
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              
+              <Button variant="outline" onClick={handleExportPDF}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print / Download
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

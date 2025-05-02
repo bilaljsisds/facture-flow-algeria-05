@@ -12,7 +12,33 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { mockDataService } from '@/services/mockDataService';
-import { ArrowLeft, FileText, Truck, User, Printer, Edit, Save } from 'lucide-react';
+import { 
+  supabase, 
+  updateDeliveryNote, 
+  deleteDeliveryNote 
+} from '@/integrations/supabase/client';
+import { 
+  ArrowLeft, 
+  FileText, 
+  Truck, 
+  User, 
+  Printer, 
+  Edit, 
+  Save,
+  Check,
+  Trash2,
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 import { exportDeliveryNoteToPDF } from '@/utils/exportUtils';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
@@ -80,7 +106,7 @@ const DeliveryNoteDetail = () => {
   });
 
   const updateDeliveryNoteMutation = useMutation({
-    mutationFn: (data) => mockDataService.updateDeliveryNote(id || '', data),
+    mutationFn: (data) => updateDeliveryNote(id || '', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deliveryNotes'] });
       toast({
@@ -95,6 +121,48 @@ const DeliveryNoteDetail = () => {
         variant: 'destructive',
         title: 'Update Failed',
         description: 'Failed to update delivery note. Please try again.'
+      });
+    }
+  });
+
+  const markAsDeliveredMutation = useMutation({
+    mutationFn: () => updateDeliveryNote(id || '', { 
+      status: 'delivered', 
+      deliveryDate: new Date().toISOString().split('T')[0] 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deliveryNotes'] });
+      toast({
+        title: 'Status Updated',
+        description: 'Delivery note has been marked as delivered'
+      });
+    },
+    onError: (error) => {
+      console.error('Error marking as delivered:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Failed to update delivery status. Please try again.'
+      });
+    }
+  });
+
+  const deleteDeliveryNoteMutation = useMutation({
+    mutationFn: () => deleteDeliveryNote(id || ''),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deliveryNotes'] });
+      toast({
+        title: 'Delivery Note Deleted',
+        description: 'Delivery note has been deleted successfully'
+      });
+      navigate('/delivery-notes');
+    },
+    onError: (error) => {
+      console.error('Error deleting delivery note:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Failed to delete delivery note. Please try again.'
       });
     }
   });
@@ -125,6 +193,16 @@ const DeliveryNoteDetail = () => {
   const onSubmit = (data) => {
     if (!id) return;
     updateDeliveryNoteMutation.mutate(data);
+  };
+
+  const handleMarkAsDelivered = () => {
+    if (!id) return;
+    markAsDeliveredMutation.mutate();
+  };
+
+  const handleDeleteDeliveryNote = () => {
+    if (!id) return;
+    deleteDeliveryNoteMutation.mutate();
   };
 
   if (!isNewNote && isLoading) {
@@ -556,8 +634,59 @@ const DeliveryNoteDetail = () => {
                 </Button>
               )}
               
+              {canEdit && deliveryNote.status === 'pending' && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Delivery Note</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this delivery note.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteDeliveryNote}
+                        className="bg-red-500 hover:bg-red-600"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              
               {deliveryNote.status === 'pending' && (
-                <Button>Mark as Delivered</Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button>
+                      <Check className="mr-2 h-4 w-4" />
+                      Mark as Delivered
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Mark as Delivered</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will mark the delivery as completed and set the delivery date to today.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleMarkAsDelivered}
+                      >
+                        Confirm
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
           </>
