@@ -145,12 +145,25 @@ export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
   const pdf = new jsPDF();
   
   // Add company header
-  pdf.setFontSize(20);
-  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
-  pdf.setFontSize(12);
-  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
-  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
+  const companyInfo = await fetchCompanyInfo();
   
+  // Add company header with real info or fallback to generic if fetch failed
+  pdf.setFontSize(20);
+  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
+  
+  // Contact information line
+  const contactInfo = companyInfo 
+    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
+    : 'Phone: +000 000 0000 | Email: info@company.com';
+  pdf.text(contactInfo, 105, 34, { align: 'center' });
+  
+  // Add tax ID and commerce registry number if available
+  if (companyInfo) {
+    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+  }
+
   // Add invoice title
   pdf.setFontSize(16);
   pdf.text(`FINAL INVOICE: ${invoice.number}`, 105, 50, { align: 'center' });
@@ -239,12 +252,24 @@ export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
 export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote) => {
   const pdf = new jsPDF();
   
-  // Add company header
+  const companyInfo = await fetchCompanyInfo();
+  
+  // Add company header with real info or fallback to generic if fetch failed
   pdf.setFontSize(20);
-  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
-  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
+  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
+  
+  // Contact information line
+  const contactInfo = companyInfo 
+    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
+    : 'Phone: +000 000 0000 | Email: info@company.com';
+  pdf.text(contactInfo, 105, 34, { align: 'center' });
+  
+  // Add tax ID and commerce registry number if available
+  if (companyInfo) {
+    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+  }
   
   // Add delivery note title
   pdf.setFontSize(16);
@@ -367,11 +392,24 @@ export const exportEtat104ToPDF = (
   const pdf = new jsPDF();
   
   // Add company header
+  const companyInfo = await fetchCompanyInfo();
+  
+  // Add company header with real info or fallback to generic if fetch failed
   pdf.setFontSize(20);
-  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
-  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
+  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
+  
+  // Contact information line
+  const contactInfo = companyInfo 
+    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
+    : 'Phone: +000 000 0000 | Email: info@company.com';
+  pdf.text(contactInfo, 105, 34, { align: 'center' });
+  
+  // Add tax ID and commerce registry number if available
+  if (companyInfo) {
+    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+  }
   
   // Add report title
   pdf.setFontSize(16);
