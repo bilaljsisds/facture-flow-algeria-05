@@ -147,7 +147,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   // Display total
   const totalInWords = formatCurrencyInFrenchWords(proforma.total);
 
-  pdf.text(`En lettres: ${totalInWords} euros`, 14, finalY + 20);
+  pdf.text(`En lettres: ${totalInWords} `, 14, finalY + 20);
   // Footer
   const pageCount = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
