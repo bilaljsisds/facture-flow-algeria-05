@@ -29,6 +29,7 @@ import NewDeliveryNote from "@/pages/delivery/NewDeliveryNote";
 import Etat104Page from "@/pages/reports/Etat104Page";
 import UsersPage from "@/pages/admin/UsersPage";
 import UserDetail from "@/pages/admin/UserDetail";
+import CompanyInfoPage from "@/pages/admin/CompanyInfoPage";
 
 // Layout
 import MainLayout from "@/components/layouts/MainLayout";
@@ -74,6 +75,7 @@ const App = () => (
               
               <Route path="/admin/users" element={<UsersPage />} />
               <Route path="/admin/users/:id" element={<UserDetail />} />
+              <Route path="/admin/company-info" element={<CompanyInfoPage />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
