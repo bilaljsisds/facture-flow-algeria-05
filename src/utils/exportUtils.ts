@@ -3,7 +3,11 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { FinalInvoice, ProformaInvoice, DeliveryNote, Client } from '@/types';
 import { fetchCompanyInfo } from '@/components/exports/CompanyInfoHeader';
+import n2words from 'n2words';
 
+export const convertNumberToFrenchWords = (num: number): string => {
+  return n2words(num, { lang: 'fr' });
+};
 // Helper for formatting currency
 const formatCurrency = (amount: number) => {
   return amount.toLocaleString('fr-DZ', { 
@@ -126,7 +130,11 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
     const splitNotes = pdf.splitTextToSize(proforma.notes, 180);
     pdf.text(splitNotes, 14, finalY + 35);
   }
-  
+
+  // Display total
+  const totalInWords = n2words(proforma.total, { lang: 'fr' });
+
+  pdf.text(`En lettres: ${totalInWords} euros`, 14, finalY + 20);
   // Footer
   const pageCount = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
