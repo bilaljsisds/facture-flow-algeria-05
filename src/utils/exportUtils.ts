@@ -83,7 +83,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
     `NIF: ${proforma.client?.taxid || ''}`,
     `Address: ${proforma.client?.address || ''}`,
     `ville: ${proforma.client?.city || ''}, ${proforma.client?.country || ''}`,
-    `Telephone: ${proforma.client?.phone || ''} , email: ${proforma.client?.email || ''} }`
+    `Telephone: ${proforma.client?.phone || ''} , email: ${proforma.client?.email || ''} `
   ], 14, clientY + 5);
   
   pdf.setFontSize(10);
@@ -207,7 +207,7 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
     `NIF: ${invoice.client?.taxid || ''}`,
     `Address: ${invoice.client?.address || ''}`,
     `ville: ${invoice.client?.city || ''}, ${invoice.client?.country || ''}`,
-    `Telephone: ${invoice.client?.phone || ''} , email: ${invoice.client?.email || ''} }`,
+    `Telephone: ${invoice.client?.phone || ''} , email: ${invoice.client?.email || ''} `,
 
   ], 14, 75);
   
