@@ -8,6 +8,19 @@ import n2words from 'n2words';
 export const convertNumberToFrenchWords = (num: number): string => {
   return n2words(num, { lang: 'fr' });
 };
+function formatCurrencyInFrenchWords(amount: number): string {
+  const euros = Math.floor(amount);
+  const cents = Math.round((amount - euros) * 100);
+
+  const eurosText = euros === 0 ? 'zéro euro' : `${n2words(euros, { lang: 'fr' })} ${euros > 1 ? 'euros' : 'euro'}`;
+  const centsText =
+    cents === 0
+      ? ''
+      : `et ${n2words(cents, { lang: 'fr' })} ${cents > 1 ? 'centimes' : 'centime'}`;
+
+  return `${eurosText} ${centsText}`.trim();
+}
+
 // Helper for formatting currency
 const formatCurrency = (amount: number) => {
   return amount.toLocaleString('fr-DZ', { 
@@ -132,9 +145,9 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   }
 
   // Display total
-  const totalInWords = n2words(proforma.total, { lang: 'fr' });
+  const totalInWords = formatCurrencyInFrenchWords(proforma.total);
 
-  pdf.text(`En lettres: ${formatCurrency(proforma.total)} euros`, 14, finalY + 20);
+  pdf.text(`En lettres: ${totalInWords} euros`, 14, finalY + 20);
   // Footer
   const pageCount = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
