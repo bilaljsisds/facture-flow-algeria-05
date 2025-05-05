@@ -312,11 +312,11 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
   pdf.text('Client:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    `client: ${deliveryNote.client?.name || ''}`,
+    `Client: ${deliveryNote.client?.name || ''}`,
     `NIF: ${deliveryNote.client?.taxid || ''}`,
     `Address: ${deliveryNote.client?.address || ''}`,
-    `ville: ${deliveryNote.client?.city || ''}, ${deliveryNote.client?.country || ''}`,
-    `Telephone: ${deliveryNote.client?.phone || ''} , email: ${deliveryNote.client?.email || ''} `
+    `Ville: ${deliveryNote.client?.city || ''}, ${deliveryNote.client?.country || ''}`,
+    `Telephone: ${deliveryNote.client?.phone || ''} , Email: ${deliveryNote.client?.email || ''} `
   ], 14, 75);
   
   pdf.setFontSize(10);
