@@ -141,7 +141,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
 };
 
 // FINAL INVOICE EXPORT
-export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
+export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
   const pdf = new jsPDF();
   
   // Add company header
@@ -249,7 +249,7 @@ export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
 };
 
 // DELIVERY NOTE EXPORT
-export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote) => {
+export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
   const pdf = new jsPDF();
   
   const companyInfo = await fetchCompanyInfo();
@@ -381,7 +381,7 @@ interface ClientSummary {
   total: number;
 }
 
-export const exportEtat104ToPDF = (
+export const exportEtat104ToPDF = async (
   clientSummaries: ClientSummary[], 
   year: string, 
   month: string,
