@@ -32,7 +32,7 @@ import { exportEtat104ToPDF, exportEtat104ToExcel } from '@/utils/exportUtils';
 interface ClientSummary {
   clientid: string;
   clientName: string;
-  taxId: string;
+  taxid: string;
   subtotal: number;
   taxTotal: number;
   total: number;
@@ -75,7 +75,7 @@ const Etat104Page = () => {
         summaryMap.set(clientid, {
           clientid,
           clientName: invoice.client.name,
-          taxId: invoice.client.taxId,
+          taxid: invoice.client.taxid,
           subtotal: invoice.subtotal,
           taxTotal: invoice.taxTotal,
           total: invoice.total,
@@ -258,7 +258,7 @@ const Etat104Page = () => {
                     {clientSummaries.map((summary) => (
                       <TableRow key={summary.clientid}>
                         <TableCell>{summary.clientName}</TableCell>
-                        <TableCell>{summary.taxId}</TableCell>
+                        <TableCell>{summary.taxid}</TableCell>
                         <TableCell className="text-right">{formatCurrency(summary.subtotal)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(summary.taxTotal)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(summary.total)}</TableCell>

@@ -566,7 +566,7 @@ const ProformaDetail = () => {
                         <SelectContent>
                           {clients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
-                              {client.name} ({client.taxId})
+                              {client.name} ({client.taxid})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -579,7 +579,7 @@ const ProformaDetail = () => {
                   <div className="mt-4 space-y-2 border-t pt-4">
                     <div>
                       <strong className="font-semibold">Tax ID:</strong>{" "}
-                      {clients.find(c => c.id === field.value)?.taxId}
+                      {clients.find(c => c.id === field.value)?.taxid}
                     </div>
                     <div>
                       <strong className="font-semibold">Address:</strong>{" "}
@@ -861,7 +861,7 @@ const ProformaDetail = () => {
               </div>
               <div>
                 <strong className="font-semibold">Tax ID:</strong>{" "}
-                {proforma.client?.taxId}
+                {proforma.client?.taxid}
               </div>
               <div>
                 <strong className="font-semibold">Address:</strong>{" "}

@@ -39,7 +39,7 @@ const ClientsPage = () => {
     const query = searchQuery.toLowerCase();
     return (
       client.name.toLowerCase().includes(query) ||
-      client.taxId.toLowerCase().includes(query) ||
+      client.taxid.toLowerCase().includes(query) ||
       client.city.toLowerCase().includes(query) ||
       client.email.toLowerCase().includes(query)
     );
@@ -112,7 +112,7 @@ const ClientsPage = () => {
                   {filteredClients.map((client) => (
                     <TableRow key={client.id}>
                       <TableCell className="font-medium">{client.name}</TableCell>
-                      <TableCell>{client.taxId}</TableCell>
+                      <TableCell>{client.taxid}</TableCell>
                       <TableCell>{client.city}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">

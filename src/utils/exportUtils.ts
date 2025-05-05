@@ -56,7 +56,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   
   // Add tax ID and commerce registry number if available
   if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
   }
   
   // Add proforma title (adjust Y position based on whether we added the tax info)
@@ -80,7 +80,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   pdf.setFontSize(10);
   pdf.text([
     proforma.client?.name || '',
-    proforma.client?.taxId || '',
+    proforma.client?.taxid || '',
     proforma.client?.address || '',
     `${proforma.client?.city || ''}, ${proforma.client?.country || ''}`
   ], 14, clientY + 5);
@@ -182,7 +182,7 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
   
   // Add tax ID and commerce registry number if available
   if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
   }
 
   // Add invoice title
@@ -203,7 +203,7 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
   pdf.setFontSize(10);
   pdf.text([
     invoice.client?.name || '',
-    invoice.client?.taxId || '',
+    invoice.client?.taxid || '',
     invoice.client?.address || '',
     `${invoice.client?.city || ''}`
   ], 14, 75);
@@ -289,7 +289,7 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
   
   // Add tax ID and commerce registry number if available
   if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
   }
   
   // Add delivery note title
@@ -396,7 +396,7 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
 interface ClientSummary {
   clientid: string;
   clientName: string;
-  taxId: string;
+  taxid: string;
   subtotal: number;
   taxTotal: number;
   total: number;
@@ -429,7 +429,7 @@ export const exportEtat104ToPDF = async (
   
   // Add tax ID and commerce registry number if available
   if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
   }
   
   // Add report title
@@ -441,7 +441,7 @@ export const exportEtat104ToPDF = async (
   // Items table
   const tableRows = clientSummaries.map(summary => [
     summary.clientName,
-    summary.taxId,
+    summary.taxid,
     formatCurrency(summary.subtotal),
     formatCurrency(summary.taxTotal),
     formatCurrency(summary.total)
@@ -524,7 +524,7 @@ export const exportEtat104ToExcel = (
   // Prepare data for Excel
   const data = clientSummaries.map(summary => ({
     'Client': summary.clientName,
-    'NIF': summary.taxId,
+    'NIF': summary.taxid,
     'Amount (Excl.)': summary.subtotal,
     'TVA': summary.taxTotal,
     'Total': summary.total

@@ -20,7 +20,7 @@ export default function CompanyInfoPage() {
     defaultValues: {
       businessName: '',
       address: '',
-      taxId: '',
+      taxid: '',
       commerceRegNumber: '',
       phone: '',
       email: '',
@@ -44,7 +44,7 @@ export default function CompanyInfoPage() {
             id: data.id,
             businessName: data.business_name || '',
             address: data.address || '',
-            taxId: data.tax_id || '',
+            taxid: data.tax_id || '',
             commerceRegNumber: data.commerce_reg_number || '',
             phone: data.phone || '',
             email: data.email || '',
@@ -66,7 +66,7 @@ export default function CompanyInfoPage() {
       const companyData = {
         business_name: formData.businessName,
         address: formData.address,
-        tax_id: formData.taxId,
+        tax_id: formData.taxid,
         commerce_reg_number: formData.commerceRegNumber,
         phone: formData.phone,
         email: formData.email,
@@ -154,7 +154,7 @@ export default function CompanyInfoPage() {
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="taxId"
+                    name="taxid"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tax ID (N° d'identification fiscale)</FormLabel>

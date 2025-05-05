@@ -21,7 +21,7 @@ export async function fetchCompanyInfo(): Promise<CompanyInfo | null> {
         id: data.id,
         businessName: data.business_name,
         address: data.address,
-        taxId: data.tax_id,
+        taxid: data.tax_id,
         commerceRegNumber: data.commerce_reg_number,
         phone: data.phone,
         email: data.email,
@@ -43,7 +43,7 @@ const CompanyInfoHeader: React.FC<{ companyInfo: CompanyInfo }> = ({ companyInfo
     <div className="text-center mb-4">
       <h2 className="text-xl font-bold">{companyInfo.businessName}</h2>
       <p>{companyInfo.address}</p>
-      <p>NIF: {companyInfo.taxId} | RC: {companyInfo.commerceRegNumber}</p>
+      <p>NIF: {companyInfo.taxid} | RC: {companyInfo.commerceRegNumber}</p>
       <p>Tel: {companyInfo.phone} | Email: {companyInfo.email}</p>
     </div>
   );

@@ -311,7 +311,7 @@ const FinalInvoiceDetail = () => {
                 </div>
                 <div>
                   <strong className="font-semibold">Tax ID:</strong>{" "}
-                  {invoice.client?.taxId}
+                  {invoice.client?.taxid}
                 </div>
                 <div>
                   <strong className="font-semibold">Address:</strong>{" "}
@@ -522,7 +522,7 @@ const FinalInvoiceDetail = () => {
                 </div>
                 <div>
                   <strong className="font-semibold">Tax ID:</strong>{" "}
-                  {invoice.client?.taxId}
+                  {invoice.client?.taxid}
                 </div>
                 <div>
                   <strong className="font-semibold">Address:</strong>{" "}
