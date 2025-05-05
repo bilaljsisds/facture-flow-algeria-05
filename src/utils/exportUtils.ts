@@ -203,10 +203,12 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
   pdf.text('Billed To:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    invoice.client?.name || '',
-    invoice.client?.taxid || '',
-    invoice.client?.address || '',
-    `${invoice.client?.city || ''}`
+    `client: ${invoice.client?.name || ''}`,
+    `NIF: ${invoice.client?.taxid || ''}`,
+    `Address: ${invoice.client?.address || ''}`,
+    `ville: ${invoice.client?.city || ''}, ${invoice.client?.country || ''}`,
+    `Telephone: ${invoice.client?.phone || ''} , email: ${invoice.client?.email || ''} }`,
+
   ], 14, 75);
   
   pdf.setFontSize(10);
@@ -310,10 +312,11 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
   pdf.text('Client:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    deliveryNote.client?.name || '',
-    deliveryNote.client?.address || '',
-    `${deliveryNote.client?.city || ''}`,
-    `Phone: ${deliveryNote.client?.phone || ''}`
+    `client: ${deliveryNote.client?.name || ''}`,
+    `NIF: ${deliveryNote.client?.taxid || ''}`,
+    `Address: ${deliveryNote.client?.address || ''}`,
+    `ville: ${deliveryNote.client?.city || ''}, ${deliveryNote.client?.country || ''}`,
+    `Telephone: ${deliveryNote.client?.phone || ''} , email: ${deliveryNote.client?.email || ''} `
   ], 14, 75);
   
   pdf.setFontSize(10);
