@@ -12,7 +12,7 @@ function formatCurrencyInFrenchWords(amount: number): string {
   const euros = Math.floor(amount);
   const cents = Math.round((amount - euros) * 100);
 
-  const eurosText = euros === 0 ? 'zéro euro' : `${n2words(euros, { lang: 'fr' })} ${euros > 1 ? 'euros' : 'euro'}`;
+  const eurosText = euros === 0 ? 'zéro euro' : `${n2words(euros, { lang: 'fr' })} ${euros > 1 ? 'Dinar Algerien' : 'Dinar Algerien'}`;
   const centsText =
     cents === 0
       ? ''
