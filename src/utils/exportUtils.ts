@@ -1,8 +1,8 @@
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { FinalInvoice, ProformaInvoice, DeliveryNote, Client } from '@/types';
+import { fetchCompanyInfo } from '@/components/exports/CompanyInfoHeader';
 
 // Helper for formatting currency
 const formatCurrency = (amount: number) => {
@@ -19,38 +19,54 @@ const formatDate = (dateString: string) => {
 };
 
 // PROFORMA INVOICE EXPORT
-export const exportProformaInvoiceToPDF = (proforma: ProformaInvoice) => {
+export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   const pdf = new jsPDF();
   
-  // Add company header
+  // Fetch company info from database
+  const companyInfo = await fetchCompanyInfo();
+  
+  // Add company header with real info or fallback to generic if fetch failed
   pdf.setFontSize(20);
-  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
-  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
+  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
   
-  // Add proforma title
+  // Contact information line
+  const contactInfo = companyInfo 
+    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
+    : 'Phone: +000 000 0000 | Email: info@company.com';
+  pdf.text(contactInfo, 105, 34, { align: 'center' });
+  
+  // Add tax ID and commerce registry number if available
+  if (companyInfo) {
+    pdf.text(`NIF: ${companyInfo.taxId} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
+  }
+  
+  // Add proforma title (adjust Y position based on whether we added the tax info)
+  const titleY = companyInfo ? 50 : 46;
   pdf.setFontSize(16);
-  pdf.text(`PROFORMA INVOICE: ${proforma.number}`, 105, 50, { align: 'center' });
+  pdf.text(`PROFORMA INVOICE: ${proforma.number}`, 105, titleY, { align: 'center' });
   
-  // Status badge
+  // Status badge (adjust Y position)
+  const badgeY = companyInfo ? 55 : 51;
   pdf.setFillColor(getStatusColor(proforma.status));
-  pdf.rect(150, 55, 25, 8, 'F');
+  pdf.rect(150, badgeY, 25, 8, 'F');
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(10);
-  pdf.text(proforma.status.toUpperCase(), 162.5, 60, { align: 'center' });
+  pdf.text(proforma.status.toUpperCase(), 162.5, badgeY + 5, { align: 'center' });
   pdf.setTextColor(0, 0, 0);
   
-  // Client and invoice details
+  // Client and invoice details (adjust Y position)
+  const clientY = companyInfo ? 70 : 66;
   pdf.setFontSize(11);
-  pdf.text('Billed To:', 14, 70);
+  pdf.text('Billed To:', 14, clientY);
   pdf.setFontSize(10);
   pdf.text([
     proforma.client?.name || '',
     proforma.client?.taxId || '',
     proforma.client?.address || '',
     `${proforma.client?.city || ''}, ${proforma.client?.country || ''}`
-  ], 14, 75);
+  ], 14, clientY + 5);
   
   pdf.setFontSize(10);
   pdf.text([
@@ -58,9 +74,10 @@ export const exportProformaInvoiceToPDF = (proforma: ProformaInvoice) => {
     `Issue Date: ${formatDate(proforma.issuedate)}`,
     `Due Date: ${formatDate(proforma.duedate)}`,
     `Payment Method: ${proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}`
-  ], 140, 75);
+  ], 140, clientY + 5);
   
-  // Items table
+  // Items table (adjust Y position)
+  const tableY = companyInfo ? 100 : 96;
   const tableRows = proforma.items.map(item => [
     `${item.product?.name}\n${item.product?.code}`,
     item.quantity.toString(),
@@ -73,7 +90,7 @@ export const exportProformaInvoiceToPDF = (proforma: ProformaInvoice) => {
   ]);
   
   autoTable(pdf, {
-    startY: 100,
+    startY: tableY,
     head: [['Product', 'Qty', 'Unit Price', 'Tax %', 'Discount %', 'Total Excl.', 'Tax Amount', 'Total Incl.']],
     body: tableRows,
     theme: 'striped',
