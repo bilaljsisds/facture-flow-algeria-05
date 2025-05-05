@@ -116,8 +116,8 @@ const ProformaDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPermission } = useAuth();
-  const canApprove = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
-  const canConvert = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
+  const canApprove = checkPermission([UserRole.ADMIN ]);
+  const canConvert = checkPermission([UserRole.ADMIN ]);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const isEditMode = window.location.pathname.includes('/edit/');
   const [totals, setTotals] = useState({ 
