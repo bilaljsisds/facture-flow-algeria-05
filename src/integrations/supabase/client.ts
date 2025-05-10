@@ -55,12 +55,12 @@ export const updateProformaInvoice = async (id: string, data: any) => {
   }
 };
 
-const Br = {
+// Export the functions directly instead of using Br
+export {
   updateProformaInvoice,
 };
 
-export default Br;
-
+// Update proforma invoice items functions
 export const updateProformaInvoiceItems = async (proformaId: string, items: any[]) => {
   try {
     // Start a transaction
