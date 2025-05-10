@@ -18,16 +18,30 @@ import {
   Truck,
   ArrowRight,
   TrendingUp,
-  AlertCircle,
-  Loader
+  AlertCircle
 } from 'lucide-react';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import { useCompanyInfo } from '@/hooks/useCompanyInfo';
+
+// Mock data for dashboard
+const mockStats = {
+  activeClients: 42,
+  proformaInvoices: 18,
+  finalInvoices: 24,
+  deliveryNotes: 19,
+  products: 87,
+  recentProformas: [
+    { id: 'P-2023-0018', client: 'Algiers Electronics', amount: 15400.00, date: '2023-04-22', status: 'Pending' },
+    { id: 'P-2023-0017', client: 'Oran Supplies Co.', amount: 8750.50, date: '2023-04-20', status: 'Approved' },
+    { id: 'P-2023-0016', client: 'Constantine Traders', amount: 22300.75, date: '2023-04-18', status: 'Pending' }
+  ],
+  recentInvoices: [
+    { id: 'F-2023-0024', client: 'Annaba Distributors', amount: 12750.00, date: '2023-04-21', status: 'Paid' },
+    { id: 'F-2023-0023', client: 'Setif Industries', amount: 19800.25, date: '2023-04-19', status: 'Unpaid' },
+    { id: 'F-2023-0022', client: 'Tlemcen Exports', amount: 8430.50, date: '2023-04-17', status: 'Paid' }
+  ]
+};
 
 const Dashboard = () => {
   const { user, checkPermission } = useAuth();
-  const { stats, isLoading } = useDashboardData();
-  const { companyInfo } = useCompanyInfo();
 
   return (
     <div className="space-y-8">
@@ -35,7 +49,6 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <div className="text-sm text-muted-foreground">
           Welcome, {user?.name}
-          {companyInfo && <span className="ml-2">| {companyInfo.businessName}</span>}
         </div>
       </div>
 
@@ -47,17 +60,8 @@ const Dashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.activeClients}</div>
-                <p className="text-xs text-muted-foreground">Active clients</p>
-              </>
-            )}
+            <div className="text-2xl font-bold">{mockStats.activeClients}</div>
+            <p className="text-xs text-muted-foreground">Active clients</p>
           </CardContent>
           <CardFooter>
             <Link to="/clients" className="text-xs text-primary flex items-center">
@@ -72,17 +76,8 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.proformaInvoices}</div>
-                <p className="text-xs text-muted-foreground">Active proforma invoices</p>
-              </>
-            )}
+            <div className="text-2xl font-bold">{mockStats.proformaInvoices}</div>
+            <p className="text-xs text-muted-foreground">Active proforma invoices</p>
           </CardContent>
           <CardFooter>
             <Link to="/invoices/proforma" className="text-xs text-primary flex items-center">
@@ -97,17 +92,8 @@ const Dashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.finalInvoices}</div>
-                <p className="text-xs text-muted-foreground">Issued final invoices</p>
-              </>
-            )}
+            <div className="text-2xl font-bold">{mockStats.finalInvoices}</div>
+            <p className="text-xs text-muted-foreground">Issued final invoices</p>
           </CardContent>
           <CardFooter>
             <Link to="/invoices/final" className="text-xs text-primary flex items-center">
@@ -122,17 +108,8 @@ const Dashboard = () => {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-xs text-muted-foreground">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.products}</div>
-                <p className="text-xs text-muted-foreground">Products in catalog</p>
-              </>
-            )}
+            <div className="text-2xl font-bold">{mockStats.products}</div>
+            <p className="text-xs text-muted-foreground">Products in catalog</p>
           </CardContent>
           <CardFooter>
             <Link to="/products" className="text-xs text-primary flex items-center">
@@ -206,32 +183,20 @@ const Dashboard = () => {
             <CardDescription>Latest created proformas</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex h-40 flex-col items-center justify-center gap-2">
-                <Loader className="h-10 w-10 animate-spin text-muted-foreground/50" />
-                <p className="text-center text-muted-foreground">Loading proformas...</p>
-              </div>
-            ) : stats.recentProformas.length === 0 ? (
-              <div className="flex h-40 flex-col items-center justify-center gap-2">
-                <FileText className="h-10 w-10 text-muted-foreground/50" />
-                <p className="text-center text-muted-foreground">No proforma invoices yet</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {stats.recentProformas.map(item => (
-                  <div key={item.id} className="flex items-center justify-between border-b pb-2">
-                    <div>
-                      <p className="font-medium">{item.number}</p>
-                      <p className="text-xs text-muted-foreground">{item.client?.name || 'Unknown client'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{item.total.toLocaleString('fr-DZ', { style: 'currency', currency: 'DZD' })}</p>
-                      <p className="text-xs text-muted-foreground">{item.issuedate}</p>
-                    </div>
+            <div className="space-y-2">
+              {mockStats.recentProformas.map(item => (
+                <div key={item.id} className="flex items-center justify-between border-b pb-2">
+                  <div>
+                    <p className="font-medium">{item.id}</p>
+                    <p className="text-xs text-muted-foreground">{item.client}</p>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="text-right">
+                    <p className="font-medium">{item.amount.toLocaleString('fr-DZ', { style: 'currency', currency: 'DZD' })}</p>
+                    <p className="text-xs text-muted-foreground">{item.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
           <CardFooter>
             <Button variant="outline" asChild className="w-full">
@@ -247,37 +212,23 @@ const Dashboard = () => {
             <CardDescription>Latest issued invoices</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex h-40 flex-col items-center justify-center gap-2">
-                <Loader className="h-10 w-10 animate-spin text-muted-foreground/50" />
-                <p className="text-center text-muted-foreground">Loading invoices...</p>
-              </div>
-            ) : stats.recentInvoices.length === 0 ? (
-              <div className="flex h-40 flex-col items-center justify-center gap-2">
-                <FileText className="h-10 w-10 text-muted-foreground/50" />
-                <p className="text-center text-muted-foreground">No final invoices yet</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {stats.recentInvoices.map(item => (
-                  <div key={item.id} className="flex items-center justify-between border-b pb-2">
-                    <div>
-                      <p className="font-medium">{item.number}</p>
-                      <p className="text-xs text-muted-foreground">{item.client?.name || 'Unknown client'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">{item.total.toLocaleString('fr-DZ', { style: 'currency', currency: 'DZD' })}</p>
-                      <div className="flex items-center justify-end gap-1">
-                        <span className={`h-2 w-2 rounded-full ${item.status === 'paid' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                        <p className="text-xs text-muted-foreground">{
-                          item.status.charAt(0).toUpperCase() + item.status.slice(1)
-                        }</p>
-                      </div>
+            <div className="space-y-2">
+              {mockStats.recentInvoices.map(item => (
+                <div key={item.id} className="flex items-center justify-between border-b pb-2">
+                  <div>
+                    <p className="font-medium">{item.id}</p>
+                    <p className="text-xs text-muted-foreground">{item.client}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">{item.amount.toLocaleString('fr-DZ', { style: 'currency', currency: 'DZD' })}</p>
+                    <div className="flex items-center justify-end gap-1">
+                      <span className={`h-2 w-2 rounded-full ${item.status === 'Paid' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                      <p className="text-xs text-muted-foreground">{item.status}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </CardContent>
           <CardFooter>
             <Button variant="outline" asChild className="w-full">
@@ -287,25 +238,19 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* System notices - only shown when there's no real data */}
-      {(!isLoading && stats.activeClients === 0 && stats.proformaInvoices === 0 && stats.finalInvoices === 0) && (
-        <Card className="border-amber-500/20 bg-amber-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-amber-800">
-              <AlertCircle className="mr-2 h-5 w-5" />
-              Getting Started
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-amber-800">
-            <p>Welcome to your new invoice management system! To get started:</p>
-            <ul className="mt-2 list-disc pl-5 space-y-1">
-              <li>First, set up your company information in the Admin section</li>
-              <li>Add your clients and products to the system</li>
-              <li>Start creating proforma invoices and converting them to final invoices</li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      {/* System notices */}
+      <Card className="border-amber-500/20 bg-amber-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-amber-800">
+            <AlertCircle className="mr-2 h-5 w-5" />
+            System Notice
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-amber-800">
+          <p>This is a demonstration system with mock data. In a production environment, this would connect to your database backend.</p>
+          <p className="mt-2">Login with different demo accounts to explore role-based permissions.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
