@@ -48,42 +48,6 @@ export type Database = {
         }
         Relationships: []
       }
-      company_info: {
-        Row: {
-          address: string
-          business_name: string
-          commerce_reg_number: string
-          created_at: string | null
-          email: string
-          id: string
-          phone: string
-          tax_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          address: string
-          business_name: string
-          commerce_reg_number: string
-          created_at?: string | null
-          email: string
-          id?: string
-          phone: string
-          tax_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          address?: string
-          business_name?: string
-          commerce_reg_number?: string
-          created_at?: string | null
-          email?: string
-          id?: string
-          phone?: string
-          tax_id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       delivery_note_items: {
         Row: {
           deliverynoteid: string

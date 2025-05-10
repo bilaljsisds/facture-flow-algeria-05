@@ -1,25 +1,8 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { FinalInvoice, ProformaInvoice, DeliveryNote, Client } from '@/types';
-import { fetchCompanyInfo } from '@/components/exports/CompanyInfoHeader';
-import n2words from 'n2words';
-
-export const convertNumberToFrenchWords = (num: number): string => {
-  return n2words(num, { lang: 'fr' });
-};
-function formatCurrencyInFrenchWords(amount: number): string {
-  const euros = Math.floor(amount);
-  const cents = Math.round((amount - euros) * 100);
-
-  const eurosText = euros === 0 ? 'zéro euro' : `${n2words(euros, { lang: 'fr' })} ${euros > 1 ? 'Dinar Algerien' : 'Dinar Algerien'}`;
-  const centsText =
-    cents === 0
-      ? ''
-      : `et ${n2words(cents, { lang: 'fr' })} ${cents > 1 ? 'centimes' : 'centime'}`;
-
-  return `${eurosText} ${centsText}`.trim();
-}
 
 // Helper for formatting currency
 const formatCurrency = (amount: number) => {
@@ -36,55 +19,38 @@ const formatDate = (dateString: string) => {
 };
 
 // PROFORMA INVOICE EXPORT
-export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
+export const exportProformaInvoiceToPDF = (proforma: ProformaInvoice) => {
   const pdf = new jsPDF();
   
-  // Fetch company info from database
-  const companyInfo = await fetchCompanyInfo();
-  
-  // Add company header with real info or fallback to generic if fetch failed
+  // Add company header
   pdf.setFontSize(20);
-  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
   
-  // Contact information line
-  const contactInfo = companyInfo 
-    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
-    : 'Phone: +000 000 0000 | Email: info@company.com';
-  pdf.text(contactInfo, 105, 34, { align: 'center' });
-  
-  // Add tax ID and commerce registry number if available
-  if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
-  }
-  
-  // Add proforma title (adjust Y position based on whether we added the tax info)
-  const titleY = companyInfo ? 50 : 46;
+  // Add proforma title
   pdf.setFontSize(16);
-  pdf.text(`PROFORMA INVOICE: ${proforma.number}`, 105, titleY, { align: 'center' });
+  pdf.text(`PROFORMA INVOICE: ${proforma.number}`, 105, 50, { align: 'center' });
   
-  // Status badge (adjust Y position)
-  const badgeY = companyInfo ? 55 : 51;
+  // Status badge
   pdf.setFillColor(getStatusColor(proforma.status));
-  pdf.rect(150, badgeY, 25, 8, 'F');
+  pdf.rect(150, 55, 25, 8, 'F');
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(10);
-  pdf.text(proforma.status.toUpperCase(), 162.5, badgeY + 5, { align: 'center' });
+  pdf.text(proforma.status.toUpperCase(), 162.5, 60, { align: 'center' });
   pdf.setTextColor(0, 0, 0);
   
-  // Client and invoice details (adjust Y position)
-  const clientY = companyInfo ? 70 : 66;
+  // Client and invoice details
   pdf.setFontSize(11);
-  pdf.text('Billed To:', 14, clientY);
+  pdf.text('Billed To:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    `client: ${proforma.client?.name || ''}`,
-    `NIF: ${proforma.client?.taxid || ''}`,
-    `Address: ${proforma.client?.address || ''}`,
-    `ville: ${proforma.client?.city || ''}, ${proforma.client?.country || ''}`,
-    `Telephone: ${proforma.client?.phone || ''} , email: ${proforma.client?.email || ''} `
-  ], 14, clientY + 5);
+    proforma.client?.name || '',
+    proforma.client?.taxId || '',
+    proforma.client?.address || '',
+    `${proforma.client?.city || ''}, ${proforma.client?.country || ''}`
+  ], 14, 75);
   
   pdf.setFontSize(10);
   pdf.text([
@@ -92,10 +58,9 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
     `Issue Date: ${formatDate(proforma.issuedate)}`,
     `Due Date: ${formatDate(proforma.duedate)}`,
     `Payment Method: ${proforma.payment_type === 'cash' ? 'Cash' : 'Cheque'}`
-  ], 140, clientY + 5);
+  ], 140, 75);
   
-  // Items table (adjust Y position)
-  const tableY = companyInfo ? 100 : 96;
+  // Items table
   const tableRows = proforma.items.map(item => [
     `${item.product?.name}\n${item.product?.code}`,
     item.quantity.toString(),
@@ -108,7 +73,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
   ]);
   
   autoTable(pdf, {
-    startY: tableY,
+    startY: 100,
     head: [['Product', 'Qty', 'Unit Price', 'Tax %', 'Discount %', 'Total Excl.', 'Tax Amount', 'Total Incl.']],
     body: tableRows,
     theme: 'striped',
@@ -144,11 +109,7 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
     const splitNotes = pdf.splitTextToSize(proforma.notes, 180);
     pdf.text(splitNotes, 14, finalY + 35);
   }
-
-  // Display total
-  const totalInWords = formatCurrencyInFrenchWords(proforma.total);
-
-  pdf.text(`En lettres: ${totalInWords} `, 14, finalY + 20);
+  
   // Footer
   const pageCount = pdf.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
@@ -163,29 +124,16 @@ export const exportProformaInvoiceToPDF = async (proforma: ProformaInvoice) => {
 };
 
 // FINAL INVOICE EXPORT
-export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
+export const exportFinalInvoiceToPDF = (invoice: FinalInvoice) => {
   const pdf = new jsPDF();
   
   // Add company header
-  const companyInfo = await fetchCompanyInfo();
-  
-  // Add company header with real info or fallback to generic if fetch failed
   pdf.setFontSize(20);
-  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
   
-  // Contact information line
-  const contactInfo = companyInfo 
-    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
-    : 'Phone: +000 000 0000 | Email: info@company.com';
-  pdf.text(contactInfo, 105, 34, { align: 'center' });
-  
-  // Add tax ID and commerce registry number if available
-  if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
-  }
-
   // Add invoice title
   pdf.setFontSize(16);
   pdf.text(`FINAL INVOICE: ${invoice.number}`, 105, 50, { align: 'center' });
@@ -203,12 +151,10 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
   pdf.text('Billed To:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    `client: ${invoice.client?.name || ''}`,
-    `NIF: ${invoice.client?.taxid || ''}`,
-    `Address: ${invoice.client?.address || ''}`,
-    `ville: ${invoice.client?.city || ''}, ${invoice.client?.country || ''}`,
-    `Telephone: ${invoice.client?.phone || ''} , email: ${invoice.client?.email || ''} `,
-
+    invoice.client?.name || '',
+    invoice.client?.taxId || '',
+    invoice.client?.address || '',
+    `${invoice.client?.city || ''}`
   ], 14, 75);
   
   pdf.setFontSize(10);
@@ -273,27 +219,15 @@ export const exportFinalInvoiceToPDF = async (invoice: FinalInvoice) => {
 };
 
 // DELIVERY NOTE EXPORT
-export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
+export const exportDeliveryNoteToPDF = (deliveryNote: DeliveryNote) => {
   const pdf = new jsPDF();
   
-  const companyInfo = await fetchCompanyInfo();
-  
-  // Add company header with real info or fallback to generic if fetch failed
+  // Add company header
   pdf.setFontSize(20);
-  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
-  
-  // Contact information line
-  const contactInfo = companyInfo 
-    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
-    : 'Phone: +000 000 0000 | Email: info@company.com';
-  pdf.text(contactInfo, 105, 34, { align: 'center' });
-  
-  // Add tax ID and commerce registry number if available
-  if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
-  }
+  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
   
   // Add delivery note title
   pdf.setFontSize(16);
@@ -312,11 +246,10 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
   pdf.text('Client:', 14, 70);
   pdf.setFontSize(10);
   pdf.text([
-    `Client: ${deliveryNote.client?.name || ''}`,
-    `NIF: ${deliveryNote.client?.taxid || ''}`,
-    `Address: ${deliveryNote.client?.address || ''}`,
-    `Ville: ${deliveryNote.client?.city || ''}, ${deliveryNote.client?.country || ''}`,
-    `Telephone: ${deliveryNote.client?.phone || ''} , Email: ${deliveryNote.client?.email || ''} `
+    deliveryNote.client?.name || '',
+    deliveryNote.client?.address || '',
+    `${deliveryNote.client?.city || ''}`,
+    `Phone: ${deliveryNote.client?.phone || ''}`
   ], 14, 75);
   
   pdf.setFontSize(10);
@@ -400,13 +333,13 @@ export const exportDeliveryNoteToPDF = async (deliveryNote: DeliveryNote) => {
 interface ClientSummary {
   clientid: string;
   clientName: string;
-  taxid: string;
+  taxId: string;
   subtotal: number;
   taxTotal: number;
   total: number;
 }
 
-export const exportEtat104ToPDF = async (
+export const exportEtat104ToPDF = (
   clientSummaries: ClientSummary[], 
   year: string, 
   month: string,
@@ -417,24 +350,11 @@ export const exportEtat104ToPDF = async (
   const pdf = new jsPDF();
   
   // Add company header
-  const companyInfo = await fetchCompanyInfo();
-  
-  // Add company header with real info or fallback to generic if fetch failed
   pdf.setFontSize(20);
-  pdf.text(companyInfo?.businessName || 'YOUR COMPANY NAME', 105, 20, { align: 'center' });
+  pdf.text('YOUR COMPANY NAME', 105, 20, { align: 'center' });
   pdf.setFontSize(12);
-  pdf.text(companyInfo?.address || 'Company Address, City, Country', 105, 28, { align: 'center' });
-  
-  // Contact information line
-  const contactInfo = companyInfo 
-    ? `Tel: ${companyInfo.phone} | Email: ${companyInfo.email}`
-    : 'Phone: +000 000 0000 | Email: info@company.com';
-  pdf.text(contactInfo, 105, 34, { align: 'center' });
-  
-  // Add tax ID and commerce registry number if available
-  if (companyInfo) {
-    pdf.text(`NIF: ${companyInfo.taxid} | RC: ${companyInfo.commerceRegNumber}`, 105, 40, { align: 'center' });
-  }
+  pdf.text('Company Address, City, Country', 105, 28, { align: 'center' });
+  pdf.text('Phone: +000 000 0000 | Email: info@company.com', 105, 34, { align: 'center' });
   
   // Add report title
   pdf.setFontSize(16);
@@ -445,7 +365,7 @@ export const exportEtat104ToPDF = async (
   // Items table
   const tableRows = clientSummaries.map(summary => [
     summary.clientName,
-    summary.taxid,
+    summary.taxId,
     formatCurrency(summary.subtotal),
     formatCurrency(summary.taxTotal),
     formatCurrency(summary.total)
@@ -528,7 +448,7 @@ export const exportEtat104ToExcel = (
   // Prepare data for Excel
   const data = clientSummaries.map(summary => ({
     'Client': summary.clientName,
-    'NIF': summary.taxid,
+    'NIF': summary.taxId,
     'Amount (Excl.)': summary.subtotal,
     'TVA': summary.taxTotal,
     'Total': summary.total

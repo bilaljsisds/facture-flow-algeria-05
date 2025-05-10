@@ -32,7 +32,7 @@ import { supabase } from "@/integrations/supabase/client";
 const clientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
-  taxid: z.string().min(5, 'Tax ID must be at least 5 characters'),
+  taxId: z.string().min(5, 'Tax ID must be at least 5 characters'),
   phone: z.string().min(8, 'Phone number must be at least 8 characters'),
   email: z.string().email('Invalid email address'),
   country: z.string().min(2, 'Country must be at least 2 characters'),
@@ -67,7 +67,7 @@ const ClientDetail = () => {
       ? {
           name: '',
           address: '',
-          taxid: '',
+          taxId: '',
           phone: '',
           email: '',
           country: 'Algeria', // Default country
@@ -76,7 +76,7 @@ const ClientDetail = () => {
       : {
           name: client?.name || '',
           address: client?.address || '',
-          taxid: client?.taxid || '',
+          taxId: client?.taxId || '',
           phone: client?.phone || '',
           email: client?.email || '',
           country: client?.country || '',
@@ -89,7 +89,7 @@ const ClientDetail = () => {
       form.reset({
         name: client.name,
         address: client.address,
-        taxid: client.taxid,
+        taxId: client.taxId,
         phone: client.phone,
         email: client.email,
         country: client.country,
@@ -103,7 +103,7 @@ const ClientDetail = () => {
       const newClient = {
         name: data.name,
         address: data.address,
-        taxid: data.taxid,
+        taxId: data.taxId,
         phone: data.phone,
         email: data.email,
         country: data.country,
@@ -133,7 +133,7 @@ const ClientDetail = () => {
       const updatedClient = {
         name: data.name,
         address: data.address,
-        taxid: data.taxid,
+        taxId: data.taxId,
         phone: data.phone,
         email: data.email,
         country: data.country,
@@ -307,7 +307,7 @@ const ClientDetail = () => {
                 
                 <FormField
                   control={form.control}
-                  name="taxid"
+                  name="taxId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tax ID (NIF)</FormLabel>
@@ -432,7 +432,7 @@ const ClientDetail = () => {
                         form.reset({
                           name: client?.name || '',
                           address: client?.address || '',
-                          taxid: client?.taxid || '',
+                          taxId: client?.taxId || '',
                           phone: client?.phone || '',
                           email: client?.email || '',
                           country: client?.country || '',

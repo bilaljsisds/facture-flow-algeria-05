@@ -116,8 +116,8 @@ const ProformaDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { checkPermission } = useAuth();
-  const canApprove = checkPermission([UserRole.ADMIN ]);
-  const canConvert = checkPermission([UserRole.ADMIN ]);
+  const canApprove = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
+  const canConvert = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const canEdit = checkPermission([UserRole.ADMIN, UserRole.ACCOUNTANT]);
   const isEditMode = window.location.pathname.includes('/edit/');
   const [totals, setTotals] = useState({ 
@@ -566,7 +566,7 @@ const ProformaDetail = () => {
                         <SelectContent>
                           {clients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
-                              {client.name} ({client.taxid})
+                              {client.name} ({client.taxId})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -579,7 +579,7 @@ const ProformaDetail = () => {
                   <div className="mt-4 space-y-2 border-t pt-4">
                     <div>
                       <strong className="font-semibold">Tax ID:</strong>{" "}
-                      {clients.find(c => c.id === field.value)?.taxid}
+                      {clients.find(c => c.id === field.value)?.taxId}
                     </div>
                     <div>
                       <strong className="font-semibold">Address:</strong>{" "}
@@ -861,7 +861,7 @@ const ProformaDetail = () => {
               </div>
               <div>
                 <strong className="font-semibold">Tax ID:</strong>{" "}
-                {proforma.client?.taxid}
+                {proforma.client?.taxId}
               </div>
               <div>
                 <strong className="font-semibold">Address:</strong>{" "}

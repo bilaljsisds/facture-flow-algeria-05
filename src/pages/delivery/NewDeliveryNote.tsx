@@ -287,7 +287,7 @@ const NewDeliveryNote = () => {
                       <SelectContent>
                         {clients.map(client => (
                           <SelectItem key={client.id} value={client.id}>
-                            {client.name} ({client.taxid})
+                            {client.name} ({client.taxId})
                           </SelectItem>
                         ))}
                       </SelectContent>
